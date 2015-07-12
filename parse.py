@@ -6,11 +6,10 @@ Parsing class with functions to create and run parsing.
 It's really just a big FSA to deal with all the sentences.  The final
 state is unique for each sentence considered.
 It's tested by messing about with setInputs words.
-You can see the output in the results/AllStates.sp file.
 If you tail it, it should end with the neurons for the final 
 state
 
-To add a new sentence,
+To add a new sentence, (old instructions)
     add a new word CA in allocateWords
     add new state CAs in allocateStates
     for this test, change inputs in setInputConnections
@@ -19,6 +18,15 @@ To add a new sentence,
     make the state transitions in makeTransitions
     record
     print
+
+I want to get it so that it can handle statements like:
+	John took the ball from Sergio.
+    Kan gave John the ball.
+
+Not sure about inferences, e.g.:
+    John has the ball.
+    John is in the kitchen.
+    Where is the ball?
 """
 # Grammar:
 # S <- PN VP .
@@ -499,7 +507,7 @@ def nestPlot():
     pl.scatter(nest.GetStatus(multSp)[0]['events']['times'],
                nest.GetStatus(multSp)[0]['events']['senders'],
                s=1, color='b')
-    pl.ylim([0,(NUMBER_WORDS + NUMBER_STATES)*5+NUMBER_PEOPLE+NUMBER_LOCS+NUMBER_OBJS])
+    pl.ylim([0,(NUMBER_WORDS + NUMBER_STATES)*5+(NUMBER_PEOPLE+NUMBER_LOCS+NUMBER_OBJS)*5])
     pl.xlim([0,200])
     pl.yticks(pl.yticks()[0],[str(int(a/5)) for a in pl.yticks()[0]])
     pl.show()
@@ -562,29 +570,31 @@ def createPop(N,label=''):
                             'v_thresh'  : -50.0
                         }
     elif simulator_name  == 'nest':
-        cell_params_lif = {'C_m':50.0,'V_th': -60.0, 'V_reset': -71.0, 't_ref':1.0}
+        cell_params_lif = {'C_m':50.0,'V_th': -60.0, 'V_reset': -71.0, 't_ref':1.0} # , 'i_offset':0.0}
     if simulator_name == 'spiNNaker':
         return Population(N, IF_curr_exp, cell_params_lif, label=label)
     elif simulator_name == 'nest':
         return Create('iaf_cond_exp',n=N, params = cell_params_lif)
 
 def configureOutput():
-    global pop_outputs, gate_outputs
+    global pop_outputs #, gate_outputs
     numOuts = NUMBER_PEOPLE+NUMBER_LOCS+NUMBER_OBJS
     finalSynState = 9
 
     # Populations
 
     # Outputs
-    pop_outputs = createPop(numOuts, label='pop_outputs')
+    # sergio suggested 1 neuron could be a problem, so I'll try 5 like others
+    pop_outputs = createPop(numOuts*5, label='pop_outputs')
     #pop_locations = createPop(NUMBER_LOCS, label='pop_locations')
     #pop_objects = createPop(, label='pop_object')
 
     # Gates
-    gate_outputs = createPop(numOuts, label='gate_outputs')
-    #gate_subjects = createPop(NUMBER_PEOPLE, label='gate_subject')
-    #gate_locations = createPop(NUMBER_LOCS, label='gate_locations')
-    #gate_objects = createPop(NUMBER_OBJS, label='gate_object')
+    # Now Sergio says I don't need separate gate neurons
+    # gate_outputs = createPop(numOuts, label='gate_outputs')
+    # #gate_subjects = createPop(NUMBER_PEOPLE, label='gate_subject')
+    # #gate_locations = createPop(NUMBER_LOCS, label='gate_locations')
+    # #gate_objects = createPop(NUMBER_OBJS, label='gate_object')
     
     #weight_to_spike = 2.0
     if simulator_name == 'spiNNaker':
@@ -592,55 +602,68 @@ def configureOutput():
     elif simulator_name == 'nest':
         weight_to_spike = 10.0
 
-    weight_to_gate = weight_to_spike * 0.05
-    weight_to_control = weight_to_spike * 0.5
+    # weight_to_gate = weight_to_spike * 0.05
+    weight_to_control = weight_to_spike * 0.2
     weight_to_inhibit = weight_to_spike * 0.05 # 1 # 2 # 5
+    weight_to_turnoff = weight_to_spike * 0.5 # 1 # 2 # 5
     inhDelay=5
     # max_delay = 100.0
 
-    # sem to Gating: 30*5 connections
+    # sem to outputs: 30*5*5 connections
+    # excitatory: weight_to_controls - allToAll -
+    # from all the semantic neurons - to the output population
     connectors = []
     for semNum in range (0, numOuts):
         for fromOff in range (0,5):
             fromNeuron = (NUMBER_SYNSTATES + semNum)*5 + fromOff
-            connectors=connectors+[(fromNeuron,semNum,weight_to_spike,DELAY)]
-    #print connectors
+            for toOff in range (0,5):
+                toNeuron = semNum*5 + toOff
+                connectors=connectors+[(fromNeuron,toNeuron,weight_to_control,DELAY)]
     peterProjection(StatesCells, pop_outputs, connectors,'excitatory')
     
-    # control: 5*30 connections
+    # Control: - excitatory: weight_to_control - allToAll (5 * 30*5)
+    # - from syn state 9 - to the outputs
     connectors = []
-    for fromOff in range (0,5):
-        for semNum in range (0, numOuts):
-            fromNeuron = finalSynState*5 + fromOff
-            connectors=connectors+[(fromNeuron,semNum,weight_to_control,DELAY)]
-    peterProjection(StatesCells, gate_outputs, connectors,'excitatory')
-
-    # Gates: 30 connections
-    connectors = []
-    for semNum in range (0, numOuts):
-        connectors=connectors+[(semNum,semNum,weight_to_gate,DELAY)]
-    peterProjection(gate_outputs, pop_outputs, connectors,'excitatory')
-
-    # Global Inhibition: 5 * (words+synStates+semStates)*5 connections
-    # Also to self, and outputs and gates?
     for fromOff in range (0,5):
         fromNeuron = finalSynState*5 + fromOff
-        # words
-        connectors = []
-        for toNeuron in range (0, NUMBER_WORDS*5):
-            connectors=connectors+[(fromNeuron,toNeuron,weight_to_inhibit,inhDelay)]
-        peterProjection(StatesCells, WordsCells, connectors,'inhibitory')
-        # synStates and semStates
-        connectors = []
-        for toNeuron in range (0, NUMBER_STATES*5):
-            connectors=connectors+[(fromNeuron,toNeuron,weight_to_inhibit,inhDelay)]
-        peterProjection(StatesCells, StatesCells, connectors,'inhibitory')
-        # gating pops
-        connectors = []
         for semNum in range (0, numOuts):
-            connectors=connectors+[(fromNeuron,semNum,weight_to_inhibit,inhDelay)]
-        peterProjection(StatesCells, pop_outputs, connectors,'inhibitory')
-        peterProjection(StatesCells, gate_outputs, connectors,'inhibitory')
+            for toOff in range (0, 5):
+                toNeuron = semNum*5 + toOff
+                connectors=connectors+[(fromNeuron,toNeuron,weight_to_control,DELAY)]
+    peterProjection(StatesCells, pop_outputs, connectors,'excitatory')
+
+    # turnOffSem: - inhibitory - allToAll 30 * (5 * 5)
+    # - from the outputs - to the semantic neurons
+    connectors = []
+    for semNum in range (0, numOuts):
+        for fromOff in range (0,5):
+            fromNeuron = semNum*5 + toOff
+            for toOff in range (0,5):
+                toNeuron = (NUMBER_SYNSTATES + semNum)*5 + fromOff
+                connectors=connectors+[(fromNeuron,toNeuron,weight_to_inhibit,DELAY)]
+    peterProjection(pop_outputs, StatesCells, connectors,'inhibitory')
+
+    # turnOffSyn: - inhibitory - allToAll (30 * 5 * 5)
+    # - from the outputs - to the syn state 9
+    connectors = []
+    for semNum in range (0, numOuts):
+        for fromOff in range (0,5):
+            fromNeuron = semNum*5 + fromOff
+            for toOff in range (0, 5):
+                toNeuron = finalSynState*5 + toOff
+                connectors=connectors+[(fromNeuron,toNeuron,weight_to_inhibit,DELAY)]
+    peterProjection(pop_outputs, StatesCells, connectors,'inhibitory')
+
+    # turnOff output - inhibitory - allToAll (30 * 5 * 5)
+    # - from outputs - to themselves
+    connectors = []
+    for semNum in range (0, numOuts):
+        for fromOff in range (0,5):
+            fromNeuron = semNum*5 + fromOff
+            for toOff in range (0, 5):
+                toNeuron = semNum*5 + toOff
+                connectors=connectors+[(fromNeuron,toNeuron,weight_to_inhibit,DELAY)]
+    peterProjection(pop_outputs, pop_outputs, connectors,'inhibitory')
 
         
 #------------Main Body---------------
