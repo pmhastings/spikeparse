@@ -413,12 +413,14 @@ class parseArea:
         self.makeWordCAs()
         self.makeStateCAs()
         self.makeTransitions()
+        self.configureOutput()
 
     # this is called from Main
     def setRecording(self):
         if self.simulator_name == 'spiNNaker':
 			self.WordsCells.record()
 			self.StatesCells.record()
+			self.pop_outputs.record()
         elif self.simulator_name == 'nest':
             self.multS = Create('multimeter', params = {'withtime': True, 
                           'interval': 1.0,
@@ -431,6 +433,7 @@ class parseArea:
             Connect(self.multW, self.WordsCells)
 
             self.multSp = Create('spike_detector')
+            Connect(self.pop_outputs, self.multSp)
             Connect(self.StatesCells, self.multSp)
             Connect(self.WordsCells, self.multSp)
 
@@ -467,8 +470,10 @@ class parseArea:
     def spinPlot(self):
         WordSpikes = self.WordsCells.getSpikes(compatible_output=True)
         StateSpikes= self.StatesCells.getSpikes(compatible_output=True)
+        OutSpikes= self.pop_outputs.getSpikes(compatible_output=True)
 
         self.plotSpikes(StateSpikes,'TR_states')
+        self.plotSpikes(OutSpikes,'TR_Outputs')
         self.plotSpikes(WordSpikes,'TR_words')
         '''
         n_panels = 2
@@ -488,7 +493,7 @@ class parseArea:
         pl.scatter(nest.GetStatus(self.multSp)[0]['events']['times'],
                    nest.GetStatus(self.multSp)[0]['events']['senders'],
                    s=1, color='b')
-        pl.ylim([0,(self.NUMBER_WORDS + self.NUMBER_STATES)*5])
+        pl.ylim([0,(self.NUMBER_WORDS + self.NUMBER_STATES)*5+self.NUMBER_PEOPLE+self.NUMBER_LOCS+self.NUMBER_OBJS])
         pl.xlim([0,200])
         pl.yticks(pl.yticks()[0],[str(int(a/5)) for a in pl.yticks()[0]])
         pl.show()
@@ -536,3 +541,96 @@ class parseArea:
         return self.StatesCells
 
 
+    # gating of the output spike: mod from Sergio's parser_synaptic_learning.py
+    # This does the work of Population for spinnaker and Create for nest
+    def createPop(self,N,label=''):
+        if self.simulator_name  == 'spiNNaker':
+            cell_params_lif = {'cm'        : 0.25, # nF
+                                'i_offset'  : 0.0,
+                                'tau_m'     : 20.0,
+                                'tau_refrac': 2.0,
+                                'tau_syn_E' : 5.0,
+                                'tau_syn_I' : 5.0,
+                                'v_reset'   : -70.0,
+                                'v_rest'    : -65.0,
+                                'v_thresh'  : -50.0
+                            }
+        elif self.simulator_name  == 'nest':
+            cell_params_lif = {'C_m':50.0,'V_th': -60.0, 'V_reset': -71.0, 't_ref':1.0}
+        if self.simulator_name == 'spiNNaker':
+            return Population(N, IF_curr_exp, cell_params_lif, label=label)
+        elif self.simulator_name == 'nest':
+            return Create('iaf_cond_exp',n=N, params = cell_params_lif)
+
+    def configureOutput(self):
+        numOuts = self.NUMBER_PEOPLE+self.NUMBER_LOCS+self.NUMBER_OBJS
+        finalSynState = 9
+
+        # Populations
+
+        # Outputs
+        self.pop_outputs = self.createPop(numOuts, label='pop_outputs')
+        #self.pop_locations = createPop(NUMBER_LOCS, label='pop_locations')
+        #self.pop_objects = createPop(, label='pop_object')
+
+        # Gates
+        self.gate_outputs = self.createPop(numOuts, label='gate_outputs')
+        #self.gate_subjects = createPop(NUMBER_PEOPLE, label='gate_subject')
+        #self.gate_locations = createPop(NUMBER_LOCS, label='gate_locations')
+        #self.gate_objects = createPop(NUMBER_OBJS, label='gate_object')
+        
+        #weight_to_spike = 2.0
+        if self.simulator_name == 'spiNNaker':
+            weight_to_spike = 10.0
+        elif self.simulator_name == 'nest':
+            weight_to_spike = 10.0
+
+        weight_to_gate = weight_to_spike * 0.05
+        weight_to_control = weight_to_spike * 0.5
+        weight_to_inhibit = weight_to_spike * 0.05 # 1 # 2 # 5
+        inhDelay=5
+        # max_delay = 100.0
+
+        # sem to Gating: 30*5 connections
+        connectors = []
+        for semNum in range (0, numOuts):
+            for fromOff in range (0,5):
+                fromNeuron = (self.NUMBER_SYNSTATES + semNum)*5 + fromOff
+                connectors=connectors+[(fromNeuron,semNum,weight_to_spike,DELAY)]
+        #print connectors
+        self.peterProjection(self.StatesCells, self.pop_outputs, connectors,'excitatory')
+        
+        # control: 5*30 connections
+        connectors = []
+        for fromOff in range (0,5):
+            for semNum in range (0, numOuts):
+                fromNeuron = finalSynState*5 + fromOff
+                connectors=connectors+[(fromNeuron,semNum,weight_to_control,DELAY)]
+        self.peterProjection(self.StatesCells, self.gate_outputs, connectors,'excitatory')
+
+        # Gates: 30 connections
+        connectors = []
+        for semNum in range (0, numOuts):
+            connectors=connectors+[(semNum,semNum,weight_to_gate,DELAY)]
+        self.peterProjection(self.gate_outputs, self.pop_outputs, connectors,'excitatory')
+
+        # Global Inhibition: 5 * (words+synStates+semStates)*5 connections
+        # Also to self, and outputs and gates?
+        for fromOff in range (0,5):
+            fromNeuron = finalSynState*5 + fromOff
+            # words
+            connectors = []
+            for toNeuron in range (0, self.NUMBER_WORDS*5):
+                connectors=connectors+[(fromNeuron,toNeuron,weight_to_inhibit,inhDelay)]
+            self.peterProjection(self.StatesCells, self.WordsCells, connectors,'inhibitory')
+            # synStates and semStates
+            connectors = []
+            for toNeuron in range (0, self.NUMBER_STATES*5):
+                connectors=connectors+[(fromNeuron,toNeuron,weight_to_inhibit,inhDelay)]
+            self.peterProjection(self.StatesCells, self.StatesCells, connectors,'inhibitory')
+            # gating pops
+            connectors = []
+            for semNum in range (0, numOuts):
+                connectors=connectors+[(fromNeuron,semNum,weight_to_inhibit,inhDelay)]
+            self.peterProjection(self.StatesCells, self.pop_outputs, connectors,'inhibitory')
+            self.peterProjection(self.StatesCells, self.gate_outputs, connectors,'inhibitory')
