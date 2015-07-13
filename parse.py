@@ -410,6 +410,7 @@ def makeTransitions():
     makeTransition(5,locations,9,location=True)
     # 5 -^Loc-> 6  (error)
     #makeTransition(5,dictComp(locations),6)
+    makeTransition(9,['.'],6)
     # 7 -the|a-> 8
     makeTransition(7,['the','a'],8)
     # 7 -^(the|a)-> 6  (error)
@@ -571,6 +572,7 @@ def createPop(N,label=''):
                         }
     elif simulator_name  == 'nest':
         cell_params_lif = {'C_m':50.0,'V_th': -60.0, 'V_reset': -71.0, 't_ref':1.0} # , 'i_offset':0.0}
+
     if simulator_name == 'spiNNaker':
         return Population(N, IF_curr_exp, cell_params_lif, label=label)
     elif simulator_name == 'nest':
@@ -579,7 +581,7 @@ def createPop(N,label=''):
 def configureOutput():
     global pop_outputs #, gate_outputs
     numOuts = NUMBER_PEOPLE+NUMBER_LOCS+NUMBER_OBJS
-    finalSynState = 9
+    finalSynState = 6
 
     # Populations
 
