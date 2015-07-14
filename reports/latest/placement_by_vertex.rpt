@@ -1,7 +1,7 @@
         Placement Information by AbstractConstrainedVertex
         ===============================
 
-Generated: Mon Jul 13 12:46:40 2015 for target machine '192.168.240.1'
+Generated: Mon Jul 13 16:17:43 2015 for target machine '192.168.240.1'
 
 **** AbstractConstrainedVertex: 'spike_injector_1'
 Model: ReverseIpTagMultiCastSource
@@ -9,67 +9,67 @@ Pop sz: 33
 Sub-vertices: 
   Slice 0:32 (33 atoms) on core (0, 0, 1) 
 
-**** AbstractConstrainedVertex: 'Population 0'
+**** AbstractConstrainedVertex: 'Population 22'
 Model: IF_curr_exp
 Pop sz: 150
 Sub-vertices: 
   Slice 0:149 (150 atoms) on core (0, 0, 2) 
 
-**** AbstractConstrainedVertex: 'Population 1'
+**** AbstractConstrainedVertex: 'Population 23'
 Model: IF_curr_exp
 Pop sz: 200
 Sub-vertices: 
   Slice 0:199 (200 atoms) on core (0, 0, 3) 
 
-**** AbstractConstrainedVertex: 'Population 2'
+**** AbstractConstrainedVertex: 'Population 24'
 Model: SpikeSourceArray
 Pop sz: 1
 Sub-vertices: 
   Slice 0:0 (1 atoms) on core (0, 0, 4) 
 
-**** AbstractConstrainedVertex: 'Population 3'
+**** AbstractConstrainedVertex: 'Population 25'
 Model: SpikeSourceArray
 Pop sz: 1
 Sub-vertices: 
   Slice 0:0 (1 atoms) on core (0, 0, 5) 
 
-**** AbstractConstrainedVertex: 'Population 4'
+**** AbstractConstrainedVertex: 'Population 26'
 Model: SpikeSourceArray
 Pop sz: 1
 Sub-vertices: 
   Slice 0:0 (1 atoms) on core (0, 0, 6) 
 
-**** AbstractConstrainedVertex: 'Population 5'
+**** AbstractConstrainedVertex: 'Population 27'
 Model: SpikeSourceArray
 Pop sz: 1
 Sub-vertices: 
   Slice 0:0 (1 atoms) on core (0, 0, 7) 
 
-**** AbstractConstrainedVertex: 'Population 6'
+**** AbstractConstrainedVertex: 'Population 28'
 Model: SpikeSourceArray
 Pop sz: 1
 Sub-vertices: 
   Slice 0:0 (1 atoms) on core (0, 0, 8) 
 
-**** AbstractConstrainedVertex: 'Population 7'
+**** AbstractConstrainedVertex: 'Population 29'
 Model: SpikeSourceArray
 Pop sz: 1
 Sub-vertices: 
   Slice 0:0 (1 atoms) on core (0, 0, 9) 
 
-**** AbstractConstrainedVertex: 'Population 8'
+**** AbstractConstrainedVertex: 'Population 30'
 Model: SpikeSourceArray
 Pop sz: 1
 Sub-vertices: 
   Slice 0:0 (1 atoms) on core (0, 0, 10) 
 
-**** AbstractConstrainedVertex: 'Population 9'
+**** AbstractConstrainedVertex: 'Population 31'
 Model: SpikeSourceArray
 Pop sz: 1
 Sub-vertices: 
   Slice 0:0 (1 atoms) on core (0, 0, 11) 
 
-**** AbstractConstrainedVertex: 'Population 10'
+**** AbstractConstrainedVertex: 'Population 32'
 Model: SpikeSourceArray
 Pop sz: 1
 Sub-vertices: 

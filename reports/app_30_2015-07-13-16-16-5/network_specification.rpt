@@ -1,0 +1,99 @@
+        Network Specification
+ =====================
+
+Generated: Mon Jul 13 16:16:16 2015 for target machine '192.168.240.1'
+
+*** Vertices:
+AbstractConstrainedVertex spike_injector_1, size: 33
+Model: ReverseIpTagMultiCastSource
+constraint: key allocator constraint where subedges coming from the vertex requires a specific key and mask which are generated from the function call <bound method ReverseIpTagMultiCastSource.generate_routing_info of <spynnaker_external_devices_plugin.pyNN.control_models.reverse_ip_tag_multi_cast_source.ReverseIpTagMultiCastSource object at 0x1095c8c50>>
+constraint: placer chip and core constraint at coords 0,0,None
+
+AbstractConstrainedVertex Population 11, size: 150
+Model: IF_curr_exp
+constraint: partitioner max atom per core constraint with size 256
+
+AbstractConstrainedVertex Population 12, size: 200
+Model: IF_curr_exp
+constraint: partitioner max atom per core constraint with size 256
+
+AbstractConstrainedVertex Population 13, size: 1
+Model: SpikeSourceArray
+constraint: partitioner max atom per core constraint with size 256
+
+AbstractConstrainedVertex Population 14, size: 1
+Model: SpikeSourceArray
+constraint: partitioner max atom per core constraint with size 256
+
+AbstractConstrainedVertex Population 15, size: 1
+Model: SpikeSourceArray
+constraint: partitioner max atom per core constraint with size 256
+
+AbstractConstrainedVertex Population 16, size: 1
+Model: SpikeSourceArray
+constraint: partitioner max atom per core constraint with size 256
+
+AbstractConstrainedVertex Population 17, size: 1
+Model: SpikeSourceArray
+constraint: partitioner max atom per core constraint with size 256
+
+AbstractConstrainedVertex Population 18, size: 1
+Model: SpikeSourceArray
+constraint: partitioner max atom per core constraint with size 256
+
+AbstractConstrainedVertex Population 19, size: 1
+Model: SpikeSourceArray
+constraint: partitioner max atom per core constraint with size 256
+
+AbstractConstrainedVertex Population 20, size: 1
+Model: SpikeSourceArray
+constraint: partitioner max atom per core constraint with size 256
+
+AbstractConstrainedVertex Population 21, size: 1
+Model: SpikeSourceArray
+constraint: partitioner max atom per core constraint with size 256
+
+AbstractConstrainedVertex pop_outputs, size: 150
+Model: IF_curr_exp
+constraint: partitioner max atom per core constraint with size 256
+
+*** Edges:
+PartitionableEdge Projection 0 from vertex: 'Population 13' (1 atoms) to vertex: 'Population 12' (200 atoms)
+  Model: No Model
+
+PartitionableEdge Projection 1 from vertex: 'Population 14' (1 atoms) to vertex: 'Population 11' (150 atoms)
+  Model: No Model
+
+PartitionableEdge Projection 2 from vertex: 'Population 15' (1 atoms) to vertex: 'Population 11' (150 atoms)
+  Model: No Model
+
+PartitionableEdge Projection 3 from vertex: 'Population 16' (1 atoms) to vertex: 'Population 11' (150 atoms)
+  Model: No Model
+
+PartitionableEdge Projection 4 from vertex: 'Population 17' (1 atoms) to vertex: 'Population 11' (150 atoms)
+  Model: No Model
+
+PartitionableEdge Projection 5 from vertex: 'Population 18' (1 atoms) to vertex: 'Population 11' (150 atoms)
+  Model: No Model
+
+PartitionableEdge Projection 6 from vertex: 'Population 19' (1 atoms) to vertex: 'Population 11' (150 atoms)
+  Model: No Model
+
+PartitionableEdge Projection 7 from vertex: 'Population 11' (150 atoms) to vertex: 'Population 11' (150 atoms)
+  Model: No Model
+
+PartitionableEdge Projection 8 from vertex: 'Population 12' (200 atoms) to vertex: 'Population 12' (200 atoms)
+  Model: No Model
+
+PartitionableEdge Projection 11 from vertex: 'Population 11' (150 atoms) to vertex: 'Population 12' (200 atoms)
+  Model: No Model
+
+PartitionableEdge Projection 12 from vertex: 'Population 12' (200 atoms) to vertex: 'Population 11' (150 atoms)
+  Model: No Model
+
+PartitionableEdge Projection 154 from vertex: 'Population 12' (200 atoms) to vertex: 'pop_outputs' (150 atoms)
+  Model: No Model
+
+PartitionableEdge Projection 156 from vertex: 'pop_outputs' (150 atoms) to vertex: 'Population 12' (200 atoms)
+  Model: No Model
+

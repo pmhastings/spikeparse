@@ -50,18 +50,25 @@ Not sure about inferences, e.g.:
 import pylab as pl
 import re
 
-from pyNN.utility.plotting import Figure, Panel
+plot = True
+
+if plot:
+    from pyNN.utility.plotting import Figure, Panel
 
 # Just importing everything because it was a pain to check which to import
 from pyNN.spiNNaker import *
 from nest import *
-import nest.raster_plot
+if plot:
+    import nest.raster_plot
+
 
 #import for spike injection
 # Ian doesn't think we really need these
 # On second thought, we do
-import spynnaker_external_devices_plugin.pyNN as externaldevices
-from spinnman.messages.eieio.eieio_prefix_type import EIEIOPrefixType
+oldSpinnaker = True
+if  oldSpinnaker:
+    import spynnaker_external_devices_plugin.pyNN as externaldevices
+    from spinnman.messages.eieio.eieio_prefix_type import EIEIOPrefixType
 
 #NEAL files and functions
 # from nealParams import *
@@ -236,12 +243,12 @@ def CAStopsCA(fromCA,toCA):
 #---create the neurons for the CAs
 def allocateInputs():
     global inputWordSource
-    cell_params_spike_injector_with_prefix = {'host_port_number' : 12345,
+    if simulator_name == 'spiNNaker':
+        cell_params_spike_injector_with_prefix = {'host_port_number' : 12345,
                         'host_ip_address'  : "localhost",
                         'virtual_key'      : 0x70800,
                         'prefix'           : 7,
                         'prefix_type': EIEIOPrefixType.UPPER_HALF_WORD}
-    if simulator_name == 'spiNNaker':
         inputWordSource = Population(NUMBER_WORDS+3,
                         externaldevices.ReverseIpTagMultiCastSource,
                         cell_params_spike_injector_with_prefix, 
@@ -316,7 +323,7 @@ def setInputConnections():
     connector = []
     for toNeuron in range (0,5):
         connector=connector+[(0,toNeuron,synWeight,DELAY)]
-        peterProjection(inputSources[0],StatesCells,
+    peterProjection(inputSources[0],StatesCells,
                                 connector,'excitatory') 
 
     # for the words
@@ -402,6 +409,8 @@ def makeTransitions():
     #makeTransition(2,dictComp(['in']),6)
     # 3 -Loc-> 9: Sem(loc(j))
     makeTransition(3,locations,9,location=True)
+    # 9 -period> 6
+    makeTransition(9,['.'],6)
     #   -the-> 5
     makeTransition(3,['the'],5)
     # 3 -^(loc|the)-> 6  (error)
@@ -410,7 +419,6 @@ def makeTransitions():
     makeTransition(5,locations,9,location=True)
     # 5 -^Loc-> 6  (error)
     #makeTransition(5,dictComp(locations),6)
-    makeTransition(9,['.'],6)
     # 7 -the|a-> 8
     makeTransition(7,['the','a'],8)
     # 7 -^(the|a)-> 6  (error)
@@ -431,7 +439,7 @@ def setConnections():
 
 # this is called from Main
 def setRecording():
-    global multS, multW, multSp
+    global multS, multW, multOut, multSp
     if simulator_name == 'spiNNaker':
         WordsCells.record()
         StatesCells.record()
@@ -447,6 +455,11 @@ def setRecording():
                       'record_from': ['V_m']})
         Connect(multW, WordsCells)
 
+        multOut= Create('multimeter', params = {'withtime': True, 
+                      'interval': 1.0,
+                      'record_from': ['V_m']})
+        Connect(multOut, pop_outputs)
+
         multSp = Create('spike_detector')
         Connect(pop_outputs, multSp)
         Connect(StatesCells, multSp)
@@ -454,7 +467,6 @@ def setRecording():
 
         # multSpW = Create('spike_detector')
         # Connect(StatesCells, multSp)
-
                                                          
         #WordsCells.record('spikes')
         #StatesCells.record('spikes')
@@ -515,10 +527,10 @@ def nestPlot():
 
 
 def printWords():
+    print "words"
     if simulator_name == 'spiNNaker':
         WordsCells.printSpikes('results/AllWords.sp')
     elif simulator_name == 'nest':
-        print "nop"
         events = GetStatus(multW)[0]['events']
         volts=events.items()[0]
         volts=volts[1]
@@ -529,11 +541,10 @@ def printWords():
             count = count + 1
 
 def printStates():
+    print "states"
     if simulator_name == 'spiNNaker':
         StatesCells.printSpikes('results/parseStates.sp')
-
     elif simulator_name == 'nest':
-        print "nop"
         events = GetStatus(multS)[0]['events']
         volts=events.items()[0]
         volts=volts[1]
@@ -543,14 +554,28 @@ def printStates():
             print count/numNeurons, ' ' , count % numNeurons, ' ' ,outp
             count = count + 1
         
-def printInputs():
-    InputSources[1].printSpikes('results/Inps.sp')
+
+def printOutputs():
+    print "outputs"
+    if simulator_name == 'spiNNaker':
+        print 'nop'
+        #StatesCells.printSpikes('results/parseOutputs.sp')
+    elif simulator_name == 'nest':
+        events = GetStatus(multOut)[0]['events']
+        volts=events.items()[0]
+        volts=volts[1]
+        count = 0
+        numNeurons = (NUMBER_PEOPLE+NUMBER_LOCS+NUMBER_OBJS)*5
+        for outp in volts:
+            print count/numNeurons, ' ' , count % numNeurons, ' ' ,outp
+            count = count + 1
 
 
 def printResults():
-    #printInputs()
     #printWords()
-    printStates()
+    #printStates()
+    #printOutputs()
+    print 'nop'
 
 def getStates():
     return StatesCells
@@ -637,47 +662,18 @@ def configureOutput():
     # turnOffSem: - inhibitory - allToAll 30 * (5 * 5)
     # - from the outputs - to the semantic neurons
     connectors = []
-    for semNum in range (0, numOuts):
-        for fromOff in range (0,5):
-            fromNeuron = semNum*5 + toOff
-            for toOff in range (0,5):
-                toNeuron = (NUMBER_SYNSTATES + semNum)*5 + fromOff
-                connectors=connectors+[(fromNeuron,toNeuron,weight_to_inhibit,DELAY)]
-    peterProjection(pop_outputs, StatesCells, connectors,'inhibitory')
+    for fromNeuron in range (0,(NUMBER_PEOPLE+NUMBER_LOCS+NUMBER_OBJS)*5):
+        for toNeuron in range (0,NUMBER_STATES*5):
+        #for toNeuron in range (0,50):
+            connectors=connectors+[(fromNeuron,toNeuron,-40.0,DELAY)]
 
-    # turnOffSyn: - inhibitory - allToAll (30 * 5 * 5)
-    # - from the outputs - to the syn state 9
-    connectors = []
-    for semNum in range (0, numOuts):
-        for fromOff in range (0,5):
-            fromNeuron = semNum*5 + fromOff
-            for toOff in range (0, 5):
-                toNeuron = finalSynState*5 + toOff
-                connectors=connectors+[(fromNeuron,toNeuron,weight_to_inhibit,DELAY)]
     peterProjection(pop_outputs, StatesCells, connectors,'inhibitory')
-
-    # turnOff output - inhibitory - allToAll (30 * 5 * 5)
-    # - from outputs - to themselves
-    connectors = []
-    for semNum in range (0, numOuts):
-        for fromOff in range (0,5):
-            fromNeuron = semNum*5 + fromOff
-            for toOff in range (0, 5):
-                toNeuron = semNum*5 + toOff
-                connectors=connectors+[(fromNeuron,toNeuron,weight_to_inhibit,DELAY)]
-    peterProjection(pop_outputs, pop_outputs, connectors,'inhibitory')
 
         
-#------------Main Body---------------
-#simulator_name = get_script_args(1)[0]  
-#exec("from pyNN.%s import *" % simulator_name)
-SIM_LENGTH=750
-SUB_POPULATION_SIZE=5
-intervalAction=100
-#setup(timestep=DELAY,min_delay=DELAY,max_delay=DELAY,db_name='if_cond.sqlite')
-
 def parse(sim, sent):
     global sentence, simulator_name
+
+    print sent
     sentence = re.findall(r"[\w']+|[.,!?;]", sent)
 
     # canonicalize sim_name
@@ -714,5 +710,19 @@ def parse(sim, sent):
     if simulator_name == 'spiNNaker':
         spinPlot()
     elif simulator_name == 'nest':
-        #parse.printResults()
-        nestPlot()
+        if plot:
+            nestPlot()
+        else:
+            printResults()
+
+
+#------------Main Body---------------
+#simulator_name = get_script_args(1)[0]  
+#exec("from pyNN.%s import *" % simulator_name)
+SIM_LENGTH=750
+SUB_POPULATION_SIZE=5
+intervalAction=100
+#setup(timestep=DELAY,min_delay=DELAY,max_delay=DELAY,db_name='if_cond.sqlite')
+
+# parse('nest', "John is in the kitchen.")
+
