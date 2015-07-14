@@ -61,14 +61,14 @@ from nest import *
 if plot:
     import nest.raster_plot
 
-
 #import for spike injection
-# Ian doesn't think we really need these
-# On second thought, we do
-oldSpinnaker = True
+oldSpinnaker = False
 if  oldSpinnaker:
     import spynnaker_external_devices_plugin.pyNN as externaldevices
     from spinnman.messages.eieio.eieio_prefix_type import EIEIOPrefixType
+else:
+    import spynnaker_external_devices_plugin.pyNN as externaldevices
+
 
 #NEAL files and functions
 # from nealParams import *
@@ -244,15 +244,25 @@ def CAStopsCA(fromCA,toCA):
 def allocateInputs():
     global inputWordSource
     if simulator_name == 'spiNNaker':
-        cell_params_spike_injector_with_prefix = {'host_port_number' : 12345,
+        if oldSpinnaker:
+            cell_params_spike_injector_with_prefix = {'host_port_number' : 12345,
                         'host_ip_address'  : "localhost",
                         'virtual_key'      : 0x70800,
                         'prefix'           : 7,
                         'prefix_type': EIEIOPrefixType.UPPER_HALF_WORD}
-        inputWordSource = Population(NUMBER_WORDS+3,
+            inputWordSource = Population(NUMBER_WORDS+3,
                         externaldevices.ReverseIpTagMultiCastSource,
                         cell_params_spike_injector_with_prefix, 
                         label='spike_injector_1')
+        else:
+            print 'nop'
+            #cell_params_spike_injector_with_prefix = {'port' : 12345,
+            #            'virtual_key'      : 0x70800}
+            #inputWordSource = Population(NUMBER_WORDS+3,
+            #            externaldevices.SpikeInjector,
+            #            cell_params_spike_injector_with_prefix, 
+            #            label='wordSpikesToBoard')
+
     elif simulator_name == 'nest':
         inputWordSource = Create('iaf_cond_exp', n=NUMBER_WORDS+3,
                         params = {'C_m':50.0,'V_th': -60.0, 'V_reset': -71.0, 't_ref':1.0})
@@ -296,7 +306,7 @@ def allocateParseNeurons():
 def setInputs():
     global inputSources
     if simulator_name == 'spiNNaker':
-        for i in range(0,9):
+        for i in range(0,7):
             spikes = [[(i+1)*50]]
             inputSources[i]=Population(1,SpikeSourceArray,{'spike_times':spikes})
     elif simulator_name == 'nest':
@@ -362,7 +372,8 @@ def makeTransition(preNum, catWords, postNum,
     if simulator_name == 'spiNNaker':
         stateToStateWeight = 0.2
         wordToStateWeight = 0.3
-        wordToSemStateWeight = 0.5
+        #wordToSemStateWeight = 0.5 undone Tuesday
+        wordToSemStateWeight = 0.7
     elif simulator_name == 'nest':
         stateToStateWeight = 2.0
         wordToStateWeight = 2.0        
@@ -396,7 +407,7 @@ def makeTransitions():
     # 0 -PN-> 1 PN ->Sem(pers(i))
     makeTransition(0,people,1,person=True)
     # 0 -^PN-> 6  (error)
-    makeTransition(0,dictComp(people),6)
+    #makeTransition(0,dictComp(people),6)
     # 1 -is-> 2
     makeTransition(1,['is'],2)
     #   -has-> 7
@@ -559,7 +570,7 @@ def printOutputs():
     print "outputs"
     if simulator_name == 'spiNNaker':
         print 'nop'
-        #StatesCells.printSpikes('results/parseOutputs.sp')
+        pop_outputs.printSpikes('results/parseOutputs.sp')
     elif simulator_name == 'nest':
         events = GetStatus(multOut)[0]['events']
         volts=events.items()[0]
@@ -574,7 +585,7 @@ def printOutputs():
 def printResults():
     #printWords()
     #printStates()
-    #printOutputs()
+    printOutputs()
     print 'nop'
 
 def getStates():
@@ -622,7 +633,7 @@ def configureOutput():
     # #gate_subjects = createPop(NUMBER_PEOPLE, label='gate_subject')
     # #gate_locations = createPop(NUMBER_LOCS, label='gate_locations')
     # #gate_objects = createPop(NUMBER_OBJS, label='gate_object')
-    
+
     #weight_to_spike = 2.0
     if simulator_name == 'spiNNaker':
         weight_to_spike = 10.0
@@ -639,6 +650,9 @@ def configureOutput():
     # sem to outputs: 30*5*5 connections
     # excitatory: weight_to_controls - allToAll -
     # from all the semantic neurons - to the output population
+    if simulator_name == 'spiNNaker':
+        weight_to_control = 0.035 #.02 too small .05 too big
+
     connectors = []
     for semNum in range (0, numOuts):
         for fromOff in range (0,5):
@@ -648,6 +662,7 @@ def configureOutput():
                 connectors=connectors+[(fromNeuron,toNeuron,weight_to_control,DELAY)]
     peterProjection(StatesCells, pop_outputs, connectors,'excitatory')
     
+
     # Control: - excitatory: weight_to_control - allToAll (5 * 30*5)
     # - from syn state 9 - to the outputs
     connectors = []
@@ -658,6 +673,10 @@ def configureOutput():
                 toNeuron = semNum*5 + toOff
                 connectors=connectors+[(fromNeuron,toNeuron,weight_to_control,DELAY)]
     peterProjection(StatesCells, pop_outputs, connectors,'excitatory')
+
+    #undone Tuesday
+    #return
+    
 
     # turnOffSem: - inhibitory - allToAll 30 * (5 * 5)
     # - from the outputs - to the semantic neurons
@@ -708,7 +727,9 @@ def parse(sim, sent):
 
     #--------------print results
     if simulator_name == 'spiNNaker':
-        spinPlot()
+        #spinPlot()
+        printStates()
+        printOutputs()
     elif simulator_name == 'nest':
         if plot:
             nestPlot()
@@ -719,10 +740,27 @@ def parse(sim, sent):
 #------------Main Body---------------
 #simulator_name = get_script_args(1)[0]  
 #exec("from pyNN.%s import *" % simulator_name)
-SIM_LENGTH=750
+SIM_LENGTH=450
 SUB_POPULATION_SIZE=5
 intervalAction=100
 #setup(timestep=DELAY,min_delay=DELAY,max_delay=DELAY,db_name='if_cond.sqlite')
 
-# parse('nest', "John is in the kitchen.")
+#locations = ["kitchen", "classroom1", "classroom2", "lecture_room"]
+#objects = ["ball", "dog", "cube", "hyperplane", "spike"]
+#people = ["John", "Sergio", "Peter", "Guido", "Ritwik", "Eric", "Philip", "Kan", "Shashi", "Pam"]
+#locVerbs = ["is in", "are in"]
+#works
+#parse('nest', "John is in the kitchen.")
+#parse('nest', "Peter is in the lecture_room.")
+#parse('nest', "Ritwik is in classroom1.")
+# parse('spiNNaker', "John is in the kitchen.")
+parse('nest', "John is in the kitchen.")
+
+#fails
+#parse('nest', "Pam are in the classroom1.")
+#parse('nest', "Pam are in classroom1.") #though close and might work
+#parse('nest', "Pam is in the cube.")
+
+
+
 
