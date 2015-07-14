@@ -5,47 +5,9 @@ fiddle with it better.)
 Parsing class with functions to create and run parsing.
 It's really just a big FSA to deal with all the sentences.  The final
 state is unique for each sentence considered.
-It's tested by messing about with setInputs words.
-If you tail it, it should end with the neurons for the final 
-state
 
-To add a new sentence, (old instructions)
-    add a new word CA in allocateWords
-    add new state CAs in allocateStates
-    for this test, change inputs in setInputConnections
-    make the word a CA in makeWordCAs
-    make the state CAs in makeStateCAs
-    make the state transitions in makeTransitions
-    record
-    print
-
-I want to get it so that it can handle statements like:
-	John took the ball from Sergio.
-    Kan gave John the ball.
-
-Not sure about inferences, e.g.:
-    John has the ball.
-    John is in the kitchen.
-    Where is the ball?
+Grammar is now moved to separate file.
 """
-# Grammar:
-# S <- PN VP .
-# PN: Person -> states(Person(i))
-# VP <- "is in" LNP
-#    <- "has" ONP
-# LNP: (the) Loc: Loc -> states(Loc(i))
-# ONP: the|a Obj: Obj -> states(Object(i))
-
-# As a graph
-# 0 -PN-> 1 PN ->Sem(pers(i))
-# 1 -is-> 2
-#   -has-> 7
-# 2 -in-> 3
-# 3 -Loc-> 9: Sem(loc(j))
-#   -the-> 5
-# 5 -Loc-> 9: Sem(loc(j))
-# 7 -the|a-> 8
-# 8 -Obj-> 9: Sem(obj(k))
 
 import pylab as pl
 import re
@@ -75,53 +37,7 @@ else:
 # I think this is the only thing from nealParams that was used
 DELAY = 1.0
 
-#sentence = "John is in the kitchen."
-#sentence = ['John', 'is', 'in', 'the', 'kitchen', '.']
-
-locations = ["kitchen", "classroom1", "classroom2", "lecture_room"]
-objects = ["ball", "dog", "cube", "hyperplane", "spike"]
-people = ["John", "Sergio", "Peter", "Guido", "Ritwik", "Eric", "Philip", "Kan", "Shashi", "Pam"]
-locVerbs = ["is in", "are in"]
-words = {'.': 0,
-        'unknown': 1,
-        '2': 2,
-        'Eric': 3,
-        'Guido': 4,
-        'John': 5,
-        'Kan': 6,
-        'Pam': 7,
-        'Peter': 8,
-        'Philip': 9,
-        'Ritwik': 10,
-        'Sergio': 11,
-        'Shashi': 12,
-        'a': 13,
-        'ball': 14,
-        'classroom1': 15,
-        'classroom2': 16,
-        'cube': 17,
-        'dog': 18,
-        'has': 19,
-        'hyperplane': 20,
-        'in': 21,
-        'is': 22,
-        'kitchen': 23,
-        'lecture_room': 24,
-        'pointer': 25,
-        'spike': 26,
-        'the': 27,
-        'where': 28,
-        'who': 29}
-
-NUMBER_WORDS = 30
-
-NUMBER_SYNSTATES = 10
-NUMBER_PEOPLE = 10
-NUMBER_LOCS = 10
-NUMBER_OBJS = 10
-NUMBER_STATES = NUMBER_SYNSTATES + NUMBER_PEOPLE + NUMBER_LOCS + NUMBER_OBJS
-
-simulator_name = ''
+# simulator_name = ''
 sentence = ''
 
 WordsCells = []
@@ -132,7 +48,7 @@ multS = []
 multW = []
 multSp = []
 pop_outputs = []
-gate_outputs = []
+# gate_outputs = []
 
 # def __init__(simName, sent):
 #     simulator_name = simName
@@ -368,7 +284,8 @@ def lookupWord(word):
 # but what happens when there's a branch?
 # I could do it explicitly
 def makeTransition(preNum, catWords, postNum,
-                   person=False, location=False, object=False):
+                   person=False, location=False, object=False, pquery=False):
+    # global simulator_name
     if simulator_name == 'spiNNaker':
         stateToStateWeight = 0.2
         wordToStateWeight = 0.3
@@ -377,7 +294,9 @@ def makeTransition(preNum, catWords, postNum,
     elif simulator_name == 'nest':
         stateToStateWeight = 2.0
         wordToStateWeight = 2.0        
-        wordToSemStateWeight = 5.0        
+        wordToSemStateWeight = 5.0
+    else:
+        raise NotImplementedError(simulator_name)
     connectStateCAToStateCA(preNum,postNum,stateToStateWeight)
     StateCAStopsStateCA(postNum,preNum)
     for word in catWords:
@@ -403,42 +322,45 @@ def dictComp(wlist):
     return list(set(words) - set(wlist))
 
 # Grammar graph as above
-def makeTransitions():
-    # 0 -PN-> 1 PN ->Sem(pers(i))
-    makeTransition(0,people,1,person=True)
-    # 0 -^PN-> 6  (error)
-    #makeTransition(0,dictComp(people),6)
-    # 1 -is-> 2
-    makeTransition(1,['is'],2)
-    #   -has-> 7
-    makeTransition(1,['has'],7)
-    # 1 -^(is|has)-> 6 PN  (error)
-    #makeTransition(1,dictComp(['is','has']),6)
-    # 2 -in-> 3
-    makeTransition(2,['in'],3)
-    # 2 -^in-> 6  (error)
-    #makeTransition(2,dictComp(['in']),6)
-    # 3 -Loc-> 9: Sem(loc(j))
-    makeTransition(3,locations,9,location=True)
-    # 9 -period> 6
-    makeTransition(9,['.'],6)
-    #   -the-> 5
-    makeTransition(3,['the'],5)
-    # 3 -^(loc|the)-> 6  (error)
-    #makeTransition(3,dictComp(locations+['the']),6)
-    # 5 -Loc-> 9: Sem(loc(j))
-    makeTransition(5,locations,9,location=True)
-    # 5 -^Loc-> 6  (error)
-    #makeTransition(5,dictComp(locations),6)
-    # 7 -the|a-> 8
-    makeTransition(7,['the','a'],8)
-    # 7 -^(the|a)-> 6  (error)
-    #makeTransition(7,dictComp(['the','a']),6)
-    # 8 -Obj-> 9: Sem(obj(k))
-    makeTransition(8,objects,9,object=True)
-    # 8 -^Obj-> 6  (error)
-    #makeTransition(8,dictComp(objects),6)
+# def makeTransitions():
+#     # 0 -PN-> 1 PN ->Sem(pers(i))
+#     makeTransition(0,people,1,person=True)
+#     # 0 -^PN-> 6  (error)
+#     #makeTransition(0,dictComp(people),6)
+#     # 1 -is-> 2
+#     makeTransition(1,['is'],2)
+#     #   -has-> 7
+#     makeTransition(1,['has'],7)
+#     # 1 -^(is|has)-> 6 PN  (error)
+#     #makeTransition(1,dictComp(['is','has']),6)
+#     # 2 -in-> 3
+#     makeTransition(2,['in'],3)
+#     # 2 -^in-> 6  (error)
+#     #makeTransition(2,dictComp(['in']),6)
+#     # 3 -Loc-> 9: Sem(loc(j))
+#     makeTransition(3,locations,9,location=True)
+#     # 9 -period> 6
+#     makeTransition(9,['.'],6)
+#     #   -the-> 5
+#     makeTransition(3,['the'],5)
+#     # 3 -^(loc|the)-> 6  (error)
+#     #makeTransition(3,dictComp(locations+['the']),6)
+#     # 5 -Loc-> 9: Sem(loc(j))
+#     makeTransition(5,locations,9,location=True)
+#     # 5 -^Loc-> 6  (error)
+#     #makeTransition(5,dictComp(locations),6)
+#     # 7 -the|a-> 8
+#     makeTransition(7,['the','a'],8)
+#     # 7 -^(the|a)-> 6  (error)
+#     #makeTransition(7,dictComp(['the','a']),6)
+#     # 8 -Obj-> 9: Sem(obj(k))
+#     makeTransition(8,objects,9,object=True)
+#     # 8 -^Obj-> 6  (error)
+#     #makeTransition(8,dictComp(objects),6)
 
+def makeTransitions():
+    for [args, kwargs] in TRANSITIONS:
+        makeTransition(*args, **kwargs)        
 
 # this is called from Main
 def setConnections():
@@ -617,7 +539,7 @@ def createPop(N,label=''):
 def configureOutput():
     global pop_outputs #, gate_outputs
     numOuts = NUMBER_PEOPLE+NUMBER_LOCS+NUMBER_OBJS
-    finalSynState = 6
+    # finalSynState = 6
 
     # Populations
 
@@ -667,7 +589,17 @@ def configureOutput():
     # - from syn state 9 - to the outputs
     connectors = []
     for fromOff in range (0,5):
-        fromNeuron = finalSynState*5 + fromOff
+        fromNeuron = finalSynStateAssertion*5 + fromOff
+        for semNum in range (0, numOuts):
+            for toOff in range (0, 5):
+                toNeuron = semNum*5 + toOff
+                connectors=connectors+[(fromNeuron,toNeuron,weight_to_control,DELAY)]
+    peterProjection(StatesCells, pop_outputs, connectors,'excitatory')
+
+    # Adding for the queries
+    connectors = []
+    for fromOff in range (0,5):
+        fromNeuron = finalSynStateQuery*5 + fromOff
         for semNum in range (0, numOuts):
             for toOff in range (0, 5):
                 toNeuron = semNum*5 + toOff
@@ -692,12 +624,13 @@ def configureOutput():
 def parse(sim, sent):
     global sentence, simulator_name
 
-    print sent
     sentence = re.findall(r"[\w']+|[.,!?;]", sent)
 
     # canonicalize sim_name
     simulator_name = sim
-    print simulator_name
+    print 'Simulator: '+ simulator_name + ', Sentence: ' + sent
+
+    # print simulator_name
     
     if simulator_name in ('spinnaker', 'spin', ''):
         simulator_name = 'spiNNaker'
@@ -737,29 +670,38 @@ def parse(sim, sent):
             printResults()
 
 
+            
 #------------Main Body---------------
-#simulator_name = get_script_args(1)[0]  
-#exec("from pyNN.%s import *" % simulator_name)
-SIM_LENGTH=450
-SUB_POPULATION_SIZE=5
-intervalAction=100
-#setup(timestep=DELAY,min_delay=DELAY,max_delay=DELAY,db_name='if_cond.sqlite')
+if __name__ == "__main__":
+    global simulator_name
+    from pyNN.utility import get_script_args
+    simulator_name = get_script_args(3,"Booboo! Please supply simulator (nest|spin), sentence, and grammar")[0]
+    sentence = get_script_args(3)[1]
+    grammar = get_script_args(3)[2]  
+    exec("from %s import *" % grammar)
 
-#locations = ["kitchen", "classroom1", "classroom2", "lecture_room"]
-#objects = ["ball", "dog", "cube", "hyperplane", "spike"]
-#people = ["John", "Sergio", "Peter", "Guido", "Ritwik", "Eric", "Philip", "Kan", "Shashi", "Pam"]
-#locVerbs = ["is in", "are in"]
-#works
-#parse('nest', "John is in the kitchen.")
-#parse('nest', "Peter is in the lecture_room.")
-#parse('nest', "Ritwik is in classroom1.")
-# parse('spiNNaker', "John is in the kitchen.")
-parse('nest', "John is in the kitchen.")
+    SIM_LENGTH=450
+    SUB_POPULATION_SIZE=5
+    intervalAction=100
 
-#fails
-#parse('nest', "Pam are in the classroom1.")
-#parse('nest', "Pam are in classroom1.") #though close and might work
-#parse('nest', "Pam is in the cube.")
+
+    #setup(timestep=DELAY,min_delay=DELAY,max_delay=DELAY,db_name='if_cond.sqlite')
+
+    #locations = ["kitchen", "classroom1", "classroom2", "lecture_room"]
+    #objects = ["ball", "dog", "cube", "hyperplane", "spike"]
+    #people = ["John", "Sergio", "Peter", "Guido", "Ritwik", "Eric", "Philip", "Kan", "Shashi", "Pam"]
+    #locVerbs = ["is in", "are in"]
+    #works
+    #parse('nest', "John is in the kitchen.")
+    #parse('nest', "Peter is in the lecture_room.")
+    #parse('nest', "Ritwik is in classroom1.")
+    # parse('spiNNaker', "John is in the kitchen.")
+    # parse('nest', "John is in the kitchen.")
+
+    #fails
+    #parse('nest', "Pam are in the classroom1.")
+    #parse('nest', "Pam are in classroom1.") #though close and might work
+    #parse('nest', "Pam is in the cube.")
 
 
 
