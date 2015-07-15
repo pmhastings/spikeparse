@@ -12,7 +12,9 @@ Grammar is now moved to separate file.
 import pylab as pl
 import re
 
-plot = True
+from grammar_qa1 import *
+
+plot = False
 
 if plot:
     from pyNN.utility.plotting import Figure, Panel
@@ -356,6 +358,7 @@ def makeTransition(preNum, catWords, postNum,
                                         NUMBER_SYNSTATES + NUMBER_PEOPLE +
                                         NUMBER_LOCS + objects.index(word),
                                         wordToSemStateWeight)
+
         if question:
             connectWordCAToStateCA(lookupWord(word),
                                         NUMBER_SYNSTATES + NUMBER_PEOPLE +
@@ -585,7 +588,7 @@ def createPop(N,label=''):
 
 def configureOutput():
     global pop_outputs #, gate_outputs
-    numOuts = NUMBER_PEOPLE+NUMBER_LOCS+NUMBER_OBJS+NUMBER_QUES #+3 #3 is where who what
+    numOuts = NUMBER_PEOPLE+NUMBER_LOCS+NUMBER_OBJS+NUMBER_QUES 
     # finalSynState = 6
 
     # Populations
@@ -713,10 +716,11 @@ def parse(sim, sent):
 #To use with memory
 def parse_no_run(sim, sent):
     global sentence, simulator_name
+
+    print 'pnr'
  
     #exec("from %s import *" % grammar)
-    from grammar_qa1 import *
-
+ 
     SIM_LENGTH=450
     SUB_POPULATION_SIZE=5
     intervalAction=100
@@ -773,6 +777,7 @@ if __name__ == "__main__":
 
     parse(simulator_name,sentence)
 
+
     #setup(timestep=DELAY,min_delay=DELAY,max_delay=DELAY,db_name='if_cond.sqlite')
 
     #locations = ["kitchen", "classroom1", "classroom2", "lecture_room"]
@@ -792,3 +797,7 @@ if __name__ == "__main__":
     #parse('nest', "Pam are in the classroom1.")
     #parse('nest', "Pam are in classroom1.") #though close and might work
     #parse('nest', "Pam is in the cube.")
+
+
+
+
