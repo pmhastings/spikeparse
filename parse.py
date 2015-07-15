@@ -270,11 +270,17 @@ def makeStateCAs():
     makeCASynapses(StatesCells,NUMBER_STATES)
 
     
+# def lookupWord(word):
+#     try:
+#         ind = words[word]
+#     except KeyError:
+#         ind = words['unknown']
+#     return ind
 def lookupWord(word):
     try:
-        ind = words[word]
-    except KeyError:
-        ind = words['unknown']
+        ind = words.index(word)
+    except ValueError:
+        ind = NUMBER_WORDS-1
     return ind
 
 
@@ -684,6 +690,8 @@ if __name__ == "__main__":
     SUB_POPULATION_SIZE=5
     intervalAction=100
 
+    if sentence:  # not empty 
+        parse(simulator_name, sentence)
 
     #setup(timestep=DELAY,min_delay=DELAY,max_delay=DELAY,db_name='if_cond.sqlite')
 

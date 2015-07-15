@@ -7,30 +7,30 @@ locations = ["kitchen", "bedroom", "bathroom", "hallway", "garden"]
 people = ['Daniel', 'John', 'Mary', 'Sandra']
 
 locVerbs = ["went to", "journeyed to", "travelled to"]
-words = {'?': 0,
-        '.': 1,
-        'Daniel': 2,
-        'John': 3,
-        'Mary': 4,
-        'Sandra': 5, 
-        'Where': 6,
-        'back': 7,
-        'bathroom': 8,
-        'bedroom': 9,
-        'garden': 10,
-        'hallway': 11,
-        'is': 12,
-        'journeyed': 13,
-        'kitchen': 14,
-        'moved': 15,
-        'office': 16,
-        'the': 17,
-        'to': 18,
-        'travelled': 19,
-        'went': 20,
-        'unknown': 21}
+words = ['?',
+        '.',
+        'Daniel',
+        'John',
+        'Mary',
+        'Sandra', 
+        'Where',
+        'back',
+        'bathroom',
+        'bedroom',
+        'garden',
+        'hallway',
+        'is',
+        'journeyed',
+        'kitchen',
+        'moved',
+        'office',
+        'the',
+        'to',
+        'travelled',
+        'went' # , 'unknown'
+    ]
 
-NUMBER_WORDS = 22
+NUMBER_WORDS = len(words)+1
 
 NUMBER_PEOPLE = 10
 NUMBER_LOCS = 10
