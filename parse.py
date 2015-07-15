@@ -328,7 +328,7 @@ def lookupWord(word):
 # but what happens when there's a branch?
 # I could do it explicitly
 def makeTransition(preNum, catWords, postNum,
-                   person=False, location=False, object=False, question=False):
+                   person=False, location=False, object=False, pquery=False):
     # global simulator_name
     if simulator_name == 'spiNNaker':
         stateToStateWeight = 0.2
@@ -357,13 +357,6 @@ def makeTransition(preNum, catWords, postNum,
             connectWordCAToStateCA(lookupWord(word),
                                         NUMBER_SYNSTATES + NUMBER_PEOPLE +
                                         NUMBER_LOCS + objects.index(word),
-                                        wordToSemStateWeight)
-
-        if question:
-            connectWordCAToStateCA(lookupWord(word),
-                                        NUMBER_SYNSTATES + NUMBER_PEOPLE +
-                                        NUMBER_LOCS + NUMBER_OBJS +
-                                        questions.index(word),
                                         wordToSemStateWeight)
         
 
@@ -503,8 +496,8 @@ def nestPlot():
     pl.scatter(nest.GetStatus(multSp)[0]['events']['times'],
                nest.GetStatus(multSp)[0]['events']['senders'],
                s=1, color='b')
-    pl.ylim([0,(5 + NUMBER_WORDS + NUMBER_STATES)*5+(NUMBER_PEOPLE+NUMBER_LOCS+NUMBER_OBJS+NUMBER_QUES)*5])
-    pl.xlim([0,SIM_LENGTH*0.5])
+    pl.ylim([0,(NUMBER_WORDS + NUMBER_STATES)*5+(NUMBER_PEOPLE+NUMBER_LOCS+NUMBER_OBJS)*5])
+    pl.xlim([0,200])
     pl.yticks(pl.yticks()[0],[str(int(a/5)) for a in pl.yticks()[0]])
     pl.show()
 
@@ -548,7 +541,7 @@ def printOutputs():
         volts=events.items()[0]
         volts=volts[1]
         count = 0
-        numNeurons = (NUMBER_PEOPLE+NUMBER_LOCS+NUMBER_OBJS+NUMBER_QUES)*5
+        numNeurons = (NUMBER_PEOPLE+NUMBER_LOCS+NUMBER_OBJS)*5
         for outp in volts:
             print count/numNeurons, ' ' , count % numNeurons, ' ' ,outp
             count = count + 1
@@ -588,7 +581,7 @@ def createPop(N,label=''):
 
 def configureOutput():
     global pop_outputs #, gate_outputs
-    numOuts = NUMBER_PEOPLE+NUMBER_LOCS+NUMBER_OBJS+NUMBER_QUES 
+    numOuts = NUMBER_PEOPLE+NUMBER_LOCS+NUMBER_OBJS#+3 #3 is where who what
     # finalSynState = 6
 
     # Populations
@@ -659,7 +652,7 @@ def configureOutput():
     # turnOffSem: - inhibitory - allToAll 30 * (5 * 5)
     # - from the outputs - to the semantic neurons
     connectors = []
-    for fromNeuron in range (0,numOuts*5):
+    for fromNeuron in range (0,(NUMBER_PEOPLE+NUMBER_LOCS+NUMBER_OBJS)*5):
         for toNeuron in range (0,NUMBER_STATES*5):
             connectors=connectors+[(fromNeuron,toNeuron,-40.0,DELAY)]
     peterProjection(pop_outputs, StatesCells, connectors,'inhibitory')
@@ -700,7 +693,7 @@ def parse(sim, sent):
     if simulator_name == 'spiNNaker':
         run(SIM_LENGTH)
     elif simulator_name == 'nest':
-        Simulate(SIM_LENGTH*0.5)
+        Simulate(600)
 
     #--------------print results
     if simulator_name == 'spiNNaker':
