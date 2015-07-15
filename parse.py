@@ -12,7 +12,7 @@ Grammar is now moved to separate file.
 import pylab as pl
 import re
 
-plot = True
+plot = False
 
 if plot:
     from pyNN.utility.plotting import Figure, Panel
@@ -32,9 +32,6 @@ else:
     import spynnaker_external_devices_plugin.pyNN as externaldevices
 
 
-#NEAL files and functions
-# from nealParams import *
-# I think this is the only thing from nealParams that was used
 DELAY = 1.0
 
 # simulator_name = ''
@@ -43,7 +40,7 @@ sentence = ''
 WordsCells = []
 StatesCells = []
 inputWordSource = []
-inputSources = [0,1,2,3,4,5,6,7,8]
+inputSources = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]
 multS = []
 multW = []
 multSp = []
@@ -222,14 +219,38 @@ def allocateParseNeurons():
 def setInputs():
     global inputSources
     if simulator_name == 'spiNNaker':
-        for i in range(0,7):
+        for i in range(0,7): 
             spikes = [[(i+1)*50]]
+            print 'hey', i, spikes
+            inputSources[i]=Population(1,SpikeSourceArray,{'spike_times':spikes})       
+        for i in range(7,14): 
+            spikes = [[(i+3)*50]]
+            print 'ho', i, spikes
             inputSources[i]=Population(1,SpikeSourceArray,{'spike_times':spikes})
+        for i in range(14,19): 
+            spikes = [[(i+5)*50]]
+            print 'h3', i, spikes
+            inputSources[i]=Population(1,SpikeSourceArray,{'spike_times':spikes})
+
     elif simulator_name == 'nest':
-        # why the diff in params? I don't know
-        for i in range(0,9):
+        # why the diff in params? Different time constants for parsing.
+        for i in range(0,7): 
+            spikes = [[(i+1)*50]]
+            print 'hey', i, (i*20)+7.0
             inputSources[i]=Create('spike_generator',
                                         params={'spike_times': [(i*20)+7.0,(i*20)+10.0]})
+        for i in range(7,14): 
+            spikes = [[(i+3)*50]]
+            print 'ho', i, (i*20)+60.0
+            inputSources[i]=Create('spike_generator',
+                                        params={'spike_times': [(i*20)+60.0,(i*20)+63.0]})
+
+        for i in range(14,19): 
+            spikes = [[(i+3)*50]]
+            print 'h3', i, (i*20)+120.0
+            inputSources[i]=Create('spike_generator',
+                                        params={'spike_times': [(i*20)+120.0,(i*20)+123.0]})
+
 
 #----Make Synapses
 #The start state, and each word have an input connection
@@ -251,15 +272,36 @@ def setInputConnections():
         connector=connector+[(0,toNeuron,synWeight,DELAY)]
     peterProjection(inputSources[0],StatesCells,
                                 connector,'excitatory') 
+    #start second sentence
+    peterProjection(inputSources[7],StatesCells, connector,'excitatory') 
+    #start third sentence
+    peterProjection(inputSources[14],StatesCells, connector,'excitatory') 
 
     # for the words
-    for i in range(0,len(sentence)):
+    #2 six word sentences, 1 four word sentence, plus three new starts
+    for i in range(0,6): 
         connector = []
         for toOff in range (0,5):
             toNeuron = lookupWord(sentence[i])*5 + toOff
             connector=connector+[(0,toNeuron,synWeight,DELAY)]
         peterProjection(inputSources[i+1],WordsCells,connector,
                             'excitatory')
+    for i in range(6,12): 
+        connector = []
+        for toOff in range (0,5):
+            toNeuron = lookupWord(sentence[i])*5 + toOff
+            connector=connector+[(0,toNeuron,synWeight,DELAY)]
+        peterProjection(inputSources[i+2],WordsCells,connector,
+                            'excitatory')
+
+    for i in range(12,16): 
+        connector = []
+        for toOff in range (0,5):
+            toNeuron = lookupWord(sentence[i])*5 + toOff
+            connector=connector+[(0,toNeuron,synWeight,DELAY)]
+        peterProjection(inputSources[i+3],WordsCells,connector,
+                            'excitatory')
+
 
 
 def makeWordCAs():
@@ -270,16 +312,10 @@ def makeStateCAs():
     makeCASynapses(StatesCells,NUMBER_STATES)
 
     
-# def lookupWord(word):
-#     try:
-#         ind = words[word]
-#     except KeyError:
-#         ind = words['unknown']
-#     return ind
 def lookupWord(word):
     try:
         ind = words.index(word)
-    except ValueError:
+    except KeyError:
         ind = NUMBER_WORDS-1
     return ind
 
@@ -295,7 +331,6 @@ def makeTransition(preNum, catWords, postNum,
     if simulator_name == 'spiNNaker':
         stateToStateWeight = 0.2
         wordToStateWeight = 0.3
-        #wordToSemStateWeight = 0.5 undone Tuesday
         wordToSemStateWeight = 0.7
     elif simulator_name == 'nest':
         stateToStateWeight = 2.0
@@ -544,14 +579,14 @@ def createPop(N,label=''):
 
 def configureOutput():
     global pop_outputs #, gate_outputs
-    numOuts = NUMBER_PEOPLE+NUMBER_LOCS+NUMBER_OBJS
+    numOuts = NUMBER_PEOPLE+NUMBER_LOCS+NUMBER_OBJS#+3 #3 is where who what
     # finalSynState = 6
 
     # Populations
 
     # Outputs
     # sergio suggested 1 neuron could be a problem, so I'll try 5 like others
-    pop_outputs = createPop(numOuts*5, label='pop_outputs')
+    pop_outputs = createPop((numOuts)*5, label='pop_outputs') 
     #pop_locations = createPop(NUMBER_LOCS, label='pop_locations')
     #pop_objects = createPop(, label='pop_object')
 
@@ -608,22 +643,16 @@ def configureOutput():
         fromNeuron = finalSynStateQuery*5 + fromOff
         for semNum in range (0, numOuts):
             for toOff in range (0, 5):
-                toNeuron = semNum*5 + toOff
+                toNeuron = semNum*5 + toOff     
                 connectors=connectors+[(fromNeuron,toNeuron,weight_to_control,DELAY)]
     peterProjection(StatesCells, pop_outputs, connectors,'excitatory')
-
-    #undone Tuesday
-    #return
-    
 
     # turnOffSem: - inhibitory - allToAll 30 * (5 * 5)
     # - from the outputs - to the semantic neurons
     connectors = []
     for fromNeuron in range (0,(NUMBER_PEOPLE+NUMBER_LOCS+NUMBER_OBJS)*5):
         for toNeuron in range (0,NUMBER_STATES*5):
-        #for toNeuron in range (0,50):
             connectors=connectors+[(fromNeuron,toNeuron,-40.0,DELAY)]
-
     peterProjection(pop_outputs, StatesCells, connectors,'inhibitory')
 
         
@@ -662,7 +691,7 @@ def parse(sim, sent):
     if simulator_name == 'spiNNaker':
         run(SIM_LENGTH)
     elif simulator_name == 'nest':
-        Simulate(200)
+        Simulate(600)
 
     #--------------print results
     if simulator_name == 'spiNNaker':
@@ -675,23 +704,69 @@ def parse(sim, sent):
         else:
             printResults()
 
-
-            
-#------------Main Body---------------
-if __name__ == "__main__":
-    global simulator_name
-    from pyNN.utility import get_script_args
-    simulator_name = get_script_args(3,"Booboo! Please supply simulator (nest|spin), sentence, and grammar")[0]
-    sentence = get_script_args(3)[1]
-    grammar = get_script_args(3)[2]  
-    exec("from %s import *" % grammar)
+#To use with memory
+def parse_no_run(sim, sent):
+    global sentence, simulator_name
+ 
+    #exec("from %s import *" % grammar)
+    from grammar_qa1 import *
 
     SIM_LENGTH=450
     SUB_POPULATION_SIZE=5
     intervalAction=100
 
-    if sentence:  # not empty 
-        parse(simulator_name, sentence)
+    print sent
+    sentence = re.findall(r"[\w']+|[.,!?;]", sent)
+
+    # canonicalize sim_name
+    simulator_name = sim
+    print simulator_name
+    
+    if simulator_name in ('spinnaker', 'spin', ''):
+        simulator_name = 'spiNNaker'
+
+    #----------------create neurons
+    # parse = parseArea(simulator_name, sentence)
+    allocateParseNeurons()
+
+    #turn on the inputs
+    setInputs()
+
+    #---------setup connections
+    setConnections()
+
+    #-------------------setup recording
+    setRecording()
+
+
+            
+#------------Main Body---------------
+if __name__ == "__main__":
+    global simulator_name
+    import sys
+    inputArgLength = len (sys.argv)
+    if inputArgLength != 4:
+        simulator_name = "nest"
+        sentence = "Daniel went to the bathroom. John went to the hallway."
+        grammar = "grammar_qa1"    
+    else:
+        simulator_name = sys.argv[1]
+        sentence = sys.argv[2]
+        grammar = sys.argv[3]
+
+    #from pyNN.utility import get_script_args
+    #simulator_name = get_script_args(3,"Booboo! Please supply simulator (nest|spin), sentence, and grammar")[0]
+    #sentence = get_script_args(3)[1]
+    #grammar = get_script_args(3)[2]  
+
+    exec("from %s import *" % grammar)
+
+    SIM_LENGTH=1500
+    SUB_POPULATION_SIZE=5
+    intervalAction=100
+
+    parse(simulator_name,sentence)
+
 
     #setup(timestep=DELAY,min_delay=DELAY,max_delay=DELAY,db_name='if_cond.sqlite')
 
@@ -705,6 +780,8 @@ if __name__ == "__main__":
     #parse('nest', "Ritwik is in classroom1.")
     # parse('spiNNaker', "John is in the kitchen.")
     # parse('nest', "John is in the kitchen.")
+    #sentence ="John went to the hallway."
+    #sentence ="Daniel went to the bathroom."
 
     #fails
     #parse('nest', "Pam are in the classroom1.")
