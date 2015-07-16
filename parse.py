@@ -668,7 +668,10 @@ def configureOutput():
 def parse(sim, sent):
     global sentence, simulator_name
 
-    sentence = re.findall(r"[\w']+|[.,!?;]", sent)
+    if isinstance(sent,basestring):
+        sentence = re.findall(r"[\w']+|[.,!?;]", sent)
+    else:
+        sentence = sent
 
     # canonicalize sim_name
     simulator_name = sim
@@ -726,7 +729,10 @@ def parse_no_run(sim, sent):
     intervalAction=100
 
     print sent
-    sentence = re.findall(r"[\w']+|[.,!?;]", sent)
+    if isinstance(sent,basestring):
+        sentence = re.findall(r"[\w']+|[.,!?;]", sent)
+    else:
+        sentence = sent
 
     # canonicalize sim_name
     simulator_name = sim
@@ -758,7 +764,7 @@ if __name__ == "__main__":
     if inputArgLength != 4:
         simulator_name = "nest"
         sentence = "daniel went to the bathroom. john went to the hallway."
-        grammar = "grammar_qa1"    
+        grammar = "grammar_qa1"
     else:
         simulator_name = sys.argv[1]
         sentence = sys.argv[2]

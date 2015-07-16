@@ -1,6 +1,7 @@
 import pyNN.spiNNaker as p
 import memory_for_parser as mem
 import parse as parser
+import get_text as sp
 
 NUMBER_PEOPLE = 10
 NUMBER_LOCS = 10
@@ -10,7 +11,15 @@ max_delay = 100.0
 
 p.setup(timestep=1.0, min_delay = 1.0, max_delay = max_delay)
 
-parser.parse_no_run('spiNNaker', "daniel went to the bathroom. john went to the hallway. where is john?")
+# parser.parse_no_run('spiNNaker', "daniel went to the bathroom. john went to the hallway. where is john?")
+
+sent1 = sp.getSentence(parser.words, "Say your first sentence now (like, 'Daniel went to the bathroom')")
+sent2 = sp.getSentence(parser.words, "Say your second sentence now (like, 'John went to the hallway')")
+sent3 = sp.getSentence(parser.words, "Say your third sentence now (like, 'Where is John')")
+
+parser.parse_no_run('spiNNaker', sent1+sent2+sent3)
+
+
 [input_populations, state_populations, output_populations, projections] = mem.memory(NUMBER_PEOPLE, NUMBER_LOCS, NUMBER_OBJS)
 
 cell_params_lif = {'cm'        : 0.25, # nF

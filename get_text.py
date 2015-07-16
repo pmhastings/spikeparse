@@ -5,13 +5,13 @@ import speech_recognition as sr
 def say (text):
     os.system("say -v Vicki " + "\"" + text + "\"")
 
-def get_text():
+def get_text(prompt="Say your statement now"):
     r = sr.Recognizer()
     good_recording = False
     text = ""
     while not good_recording:
-        print "Say your statement now"
-        say("Say your statement now")
+        print prompt
+        say(prompt)
         # use the default microphone as the audio source
         with sr.Microphone() as source:
             # listen for the first phrase and extract it into audio data
@@ -41,8 +41,8 @@ def get_text():
 
 # memory=[]
 
-def getSentence(words):
-    text=get_text();
+def getSentence(words, prompt):
+    text=get_text(prompt);
     print "initial text: " + text
     text_list = text.lower().split()
     final_list=[]
