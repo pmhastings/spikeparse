@@ -85,7 +85,7 @@ def memory(subjects, locations, objects):
         list_connector2 = list()
         for j in xrange (input_reps):
             list_connector2.append([j, i, 1.5*weight_to_spike, 1])
-        print "Subjects {0:d}: {1:s}".format(i, list_connector2)
+        # print "Subjects {0:d}: {1:s}".format(i, list_connector2)
         input_subject_conn.append( p.Projection(input_pop_subject[i], pop_subject, p.FromListConnector(list_connector2)) )
         input_subject_injection.append( p.Projection(input_subjects, input_pop_subject[i], p.FromListConnector([[i, 0, weight_to_spike, 1]])) )
         input_subject_inh_locations = p.Projection(input_pop_subject[i], pop_locations, p.AllToAllConnector(weights = 0.5*weight_to_spike, delays = 1), target='inhibitory')
@@ -103,7 +103,7 @@ def memory(subjects, locations, objects):
         list_connector2 = list()
         for j in xrange (input_reps):
             list_connector2.append([j, i, 1.5*weight_to_spike, 1])
-        print "Locations {0:d}: {1:s}".format(i, list_connector2)
+        # print "Locations {0:d}: {1:s}".format(i, list_connector2)
         input_location_conn.append( p.Projection(input_pop_location[i], pop_locations, p.FromListConnector(list_connector2)) )
         input_location_injection.append( p.Projection(input_locations, input_pop_location[i], p.FromListConnector([[i, 0, weight_to_spike, 1]])) )
         input_location_inh_subjects = p.Projection(input_pop_location[i], pop_subject, p.AllToAllConnector(weights = 0.5*weight_to_spike, delays = 1), target='inhibitory')

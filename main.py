@@ -13,9 +13,9 @@ p.setup(timestep=1.0, min_delay = 1.0, max_delay = max_delay)
 
 # parser.parse_no_run('spiNNaker', "daniel went to the bathroom. john went to the hallway. where is john?")
 
-sent1 = sp.getSentence(parser.words, "Say your first sentence now")
-sent2 = sp.getSentence(parser.words, "Say your second sentence now")
-sent3 = sp.getSentence(parser.words, "Say your third sentence now")
+sent1 = sp.getSentence(parser.words, "Say your first assertion now")
+sent2 = sp.getSentence(parser.words, "Say your second assertion now")
+sent3 = sp.getSentence(parser.words, "Ask your question now")
 
 parser.parse_no_run('spiNNaker', sent1+sent2+sent3)
 

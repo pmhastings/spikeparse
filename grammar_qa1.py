@@ -7,7 +7,7 @@ locations = ["kitchen", "bedroom", "bathroom", "hallway", "garden"]
 people = ['daniel', 'john', 'mary', 'sandra']
 objects = []
 questions = ['where']
-locVerbs = ["went", "journeyed", "travelled"]
+locVerbs = ["went", "journeyed", "travelled", "traveled"]
 words = ['?',
         '.',
         'daniel',
@@ -28,6 +28,7 @@ words = ['?',
         'the',
         'to',
         'travelled',
+        'traveled',
         'went' # , 'unknown'
     ]
 

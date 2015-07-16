@@ -4,7 +4,7 @@
 
 locations = ['bathroom', 'bedroom', 'garden', 'hallway', 'kitchen', 'office']
 
-people = ['Daniel', 'John', 'Mary', 'Sandra']
+people = ['daniel', 'john', 'mary', 'sandra']
 
 # moved to
 # went back to
@@ -14,64 +14,58 @@ people = ['Daniel', 'John', 'Mary', 'Sandra']
 # got X there
 # grabbed X there
 # put down X (there)
-locVerbs = ["went to", "journeyed to", "travelled to"}
-words = {'?': 0,
-        '.': 1,
-        'Daniel': 2,
-        'John': 3,
-        'Mary': 4,
-        'Sandra': 5, 
-        'Where': 6,
-        'back': 7,
-        'bathroom': 8,
-        'bedroom': 9,
-        'garden': 10,
-        'hallway': 11,
-        'is': 12,
-        'journeyed': 13,
-        'kitchen': 14,
-        'moved': 15,
-        'office': 16,
-        'the': 17,
-        'to': 18,
-        'travelled': 19,
-        'went': 20,
-        'unknown': 21}
+locVerbs = ['went', 'journeyed', 'travelled']
+getVerbs = ['got', 'grabbed', 'took']  # + picked up
+putVerbs = ['discarded', 'dropped', 'left'] # + put down 
+words = ['.', '?', 'daniel', 'john', 'mary', 'sandra',
+        'where', 'apple', 'back', 'bathroom', 'bedroom', 'discarded', 'down',
+        'dropped', 'football', 'garden', 'got', 'grabbed', 'hallway', 'is',
+        'journeyed', 'kitchen', 'left', 'milk', 'moved', 'office', 'picked',
+        'put', 'the', 'there', 'to', 'took', 'travelled', 'up', 'went']
+objects = ['apple', 'football', 'milk']
+locations = ['bathroom', 'bedroom', 'garden', 'hallway', 'kitchen', 'office']
 
-NUMBER_WORDS = 22
+# Grammar graph as above
+TRANSITIONS = \
+    [[[0,people,1], dict(person=True)],
+    [[1,locVerbs,2],{}],
+    [[2,['to'],3],{}],
+    [[3,['the'],4],{}],
+    [[4,locations,5], dict(location=True)],
+    [[5,['.'],6],{}],                     # final
+    [[2,getVerbs,7],{}],
+    [[7,['the'],8],{}],
+    [[8,objects,9], dict(object=True)],
+    [[9,['.'],6], {}],
+    [[9,['there'],10], {}],
+    [[10,['.'],6], {}],
+    [[2, ['picked'], 11], {}],
+    [[11, ['up'], 7], {}],
+    [[2,putVerbs,12],{}],
+    [[12,['the'],13],{}],
+    [[13,objects,14], dict(object=True)],  # should have deleted object
+    [[14,['.'],6], {}],
+    [[14,['there'],15], {}],
+    [[15,['.'],6], {}],
+    [[2, ['put'], 16], {}],
+    [[16, ['down'], 12], {}],
+    [[2,['back'],17],{}],
+    [[17,['to'],4],{}],
+    [[0,['where'],18],dict(question=True)],
+    [[18,['is'],19],{}],
+    [[19,['the'],20],{}],
+    [[20,objects,21], dict(object=True)],
+    [[21,['?'],22],{}]]                   # final
 
-NUMBER_SYNSTATES = 10
+NUMBER_WORDS = len(words)+1
+
+NUMBER_SYNSTATES = max([tr[0][2] for tr in TRANSITIONS])+1
 NUMBER_PEOPLE = 10
 NUMBER_LOCS = 10
 NUMBER_OBJS = 10
+NUMBER_QUES = 1
 NUMBER_STATES = NUMBER_SYNSTATES + NUMBER_PEOPLE + NUMBER_LOCS + NUMBER_OBJS
 
-# Grammar graph as above
-def makeTransitions():
-    # 0 -PN-> 1 PN ->Sem(pers(i))
-    makeTransition(0,people,1,person=True)
-    # 1 -loc-> 2
-    makeTransition(1,['locVerb'],2)
-    # 2 -to-> 3
-    makeTransition(2,['to'],3)
-    # 3 -the-> 4
-    makeTransition(3,['the'],4)
-    # 4 -Loc-> 5: Sem(loc(j))
-    makeTransition(4,locations,5,location=True)
-    # 5 -period> 6
-    makeTransition(5,['.'],6)
-    # 2 -back-> 7
-    makeTransition(2,['back'],7)
-    # 7 -to-> 3
-    makeTransition(3,['to'],4)
-    # 0 -Where-> 8
-    makeTransition(0,['Where'],8)
-    # 8 -is-> 9
-    makeTransition(8,['is'],9)
-    # 9 -is-> 10
-    makeTransition(9,people,10,pquery=True)
-    # 10 -?-> 11
-    makeTransition(10,['?'],11)
 
 finalSynStateAssertion = 6
 finalSynStateQuery = 11
