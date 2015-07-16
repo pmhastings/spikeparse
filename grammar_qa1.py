@@ -4,9 +4,9 @@
 # from parse import makeTransition
 
 locations = ["kitchen", "bedroom", "bathroom", "hallway", "garden"]
-people = ['Daniel', 'John', 'Mary', 'Sandra']
-
-#locVerbs = ["went to", "journeyed to", "travelled to"]
+people = ['daniel', 'john', 'mary', 'sandra']
+objects = []
+questions = ['where']
 locVerbs = ["went", "journeyed", "travelled"]
 words = ['?',
         '.',
@@ -36,6 +36,7 @@ NUMBER_WORDS = len(words)+1
 NUMBER_PEOPLE = 10
 NUMBER_LOCS = 10
 NUMBER_OBJS = 10
+NUMBER_QUES = 3
 
 # Grammar:
 # S <- PN VP .
@@ -66,13 +67,13 @@ TRANSITIONS = \
     [[5,['.'],6], {}],
     [[2,['back'],7], {}],
     [[3,['to'],4], {}],
-    [[0,['where'],8], {}],
+    [[0,['where'],8], dict(question=True)],
     [[8,['is'],9], {}],
-    [[9,people,10],dict(pquery=True)],
+    [[9,people,10],dict(person=True)],
     [[10,['?'],11], {}]]
 
 NUMBER_SYNSTATES = 12
-NUMBER_STATES = NUMBER_SYNSTATES + NUMBER_PEOPLE + NUMBER_LOCS + NUMBER_OBJS
+NUMBER_STATES = NUMBER_SYNSTATES + NUMBER_PEOPLE + NUMBER_LOCS + NUMBER_OBJS + NUMBER_QUES
 
 
 finalSynStateAssertion = 6
