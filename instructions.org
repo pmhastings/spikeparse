@@ -1,0 +1,17 @@
+* Assertion
+
+  | Daniel | went      | to | the | bathroom |
+  | John   | travelled |    |     | bedroom  |
+  | Mary   | journeyed |    |     | garden   |
+  | Sandra |           |    |     | hallway  |
+  |        |           |    |     | kitchen  |
+  |        |           |    |     | office   |
+
+* Question 
+
+  | Where | is | Daniel |
+  |       |    | John   |
+  |       |    | Mary   |
+  |       |    | Sandra |
+  
+
