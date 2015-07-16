@@ -13,9 +13,9 @@ p.setup(timestep=1.0, min_delay = 1.0, max_delay = max_delay)
 
 # parser.parse_no_run('spiNNaker', "daniel went to the bathroom. john went to the hallway. where is john?")
 
-sent1 = sp.getSentence(parser.words, "Say your first sentence now (like, 'Daniel went to the bathroom')")
-sent2 = sp.getSentence(parser.words, "Say your second sentence now (like, 'John went to the hallway')")
-sent3 = sp.getSentence(parser.words, "Say your third sentence now (like, 'Where is John')")
+sent1 = sp.getSentence(parser.words, "Say your first sentence now")
+sent2 = sp.getSentence(parser.words, "Say your second sentence now")
+sent3 = sp.getSentence(parser.words, "Say your third sentence now")
 
 parser.parse_no_run('spiNNaker', sent1+sent2+sent3)
 
@@ -79,12 +79,12 @@ query_subject_proj_list = [[i*5, i, weight_to_gate, signal_delay] for i in xrang
 query_locations_proj_list = [[i*5 + (NUMBER_PEOPLE*5), i, weight_to_gate, signal_delay] for i in xrange(NUMBER_LOCS)]
 query_objects_proj_list = [[i*5 + (NUMBER_PEOPLE + NUMBER_LOCS)*5, i, weight_to_gate, signal_delay] for i in xrange(NUMBER_OBJS)]
 
-print statement_subject_proj_list
-print statement_locations_proj_list
-print statement_objects_proj_list
-print query_subject_proj_list
-print query_locations_proj_list
-print query_objects_proj_list
+# print statement_subject_proj_list
+# print statement_locations_proj_list
+# print statement_objects_proj_list
+# print query_subject_proj_list
+# print query_locations_proj_list
+# print query_objects_proj_list
 
 subj_source_statement_proj = p.Projection(src_pop, who_statement_gate, p.FromListConnector(statement_subject_proj_list), target='excitatory')
 subj_source_query_proj = p.Projection(src_pop, who_query_gate, p.FromListConnector(query_subject_proj_list), target='excitatory')
@@ -159,30 +159,30 @@ what.record()
 
 p.run(10 * 1000)
 
-src_pop_spikes = src_pop.getSpikes(compatible_output=True)
-who_statement_gate_spikes = who_statement_gate.getSpikes(compatible_output=True)
-who_statement_gate_v = who_statement_gate.get_v()
-who_statement_gate_i = who_statement_gate.get_gsyn()
-where_statement_gate_spikes = where_statement_gate.getSpikes(compatible_output=True)
-what_statement_gate_spikes = what_statement_gate.getSpikes(compatible_output=True)
-who_query_gate_spikes = who_query_gate.getSpikes(compatible_output=True)
-who_query_gate_v = who_query_gate.get_v()
-who_query_gate_i = who_query_gate.get_gsyn()
-where_query_gate_spikes = where_query_gate.getSpikes(compatible_output=True)
-what_query_gate_spikes = what_query_gate.getSpikes(compatible_output=True)
-dst_who_spikes = dst_who.getSpikes(compatible_output=True)
-dst_where_spikes = dst_where.getSpikes(compatible_output=True)
-dst_what_spikes = dst_what.getSpikes(compatible_output=True)
-who_spikes = who.getSpikes(compatible_output=True)
-where_spikes = where.getSpikes(compatible_output=True)
-what_spikes = what.getSpikes(compatible_output=True)
+# src_pop_spikes = src_pop.getSpikes(compatible_output=True)
+# who_statement_gate_spikes = who_statement_gate.getSpikes(compatible_output=True)
+# who_statement_gate_v = who_statement_gate.get_v()
+# who_statement_gate_i = who_statement_gate.get_gsyn()
+# where_statement_gate_spikes = where_statement_gate.getSpikes(compatible_output=True)
+# what_statement_gate_spikes = what_statement_gate.getSpikes(compatible_output=True)
+# who_query_gate_spikes = who_query_gate.getSpikes(compatible_output=True)
+# who_query_gate_v = who_query_gate.get_v()
+# who_query_gate_i = who_query_gate.get_gsyn()
+# where_query_gate_spikes = where_query_gate.getSpikes(compatible_output=True)
+# what_query_gate_spikes = what_query_gate.getSpikes(compatible_output=True)
+# dst_who_spikes = dst_who.getSpikes(compatible_output=True)
+# dst_where_spikes = dst_where.getSpikes(compatible_output=True)
+# dst_what_spikes = dst_what.getSpikes(compatible_output=True)
+# who_spikes = who.getSpikes(compatible_output=True)
+# where_spikes = where.getSpikes(compatible_output=True)
+# what_spikes = what.getSpikes(compatible_output=True)
 
-print 'a' , who_statement_gate_spikes 
-print 'b' , where_statement_gate_spikes 
-temp = output_populations['where_gate']
-tempSpikes = temp.getSpikes(compatible_output=True)
-print 'c' , tempSpikes 
-print 'd' , src_pop_spikes 
-#play_spikes = play_pop.getSpikes(compatible_output=True)
-#print 'e' ,play_spikes
+# print 'a' , who_statement_gate_spikes 
+# print 'b' , where_statement_gate_spikes 
+# temp = output_populations['where_gate']
+# tempSpikes = temp.getSpikes(compatible_output=True)
+# print 'c' , tempSpikes 
+# print 'd' , src_pop_spikes 
+# #play_spikes = play_pop.getSpikes(compatible_output=True)
+# #print 'e' ,play_spikes
 
