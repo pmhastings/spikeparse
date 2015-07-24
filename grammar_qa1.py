@@ -67,7 +67,7 @@ TRANSITIONS = \
     [[4,locations,5],dict(location=True)],
     [[5,['.'],6], {}],
     [[2,['back'],7], {}],
-    [[3,['to'],4], {}],
+    [[7,['to'],3], {}],
     [[0,['where'],8], dict(question=True)],
     [[8,['is'],9], {}],
     [[9,people,10],dict(person=True)],

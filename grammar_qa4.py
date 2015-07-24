@@ -40,7 +40,7 @@ TRANSITIONS = \
     [[4,['of'],5], {}],                       # 4 -of-> 5
     [[5,['the'],6], {}],                      # 5 -the-> 6
     [[6,locations,7], dict(location2=True)],  # 6 -dir-> 7
-    [[7,['.'],8], {}]]                        # final
+    [[7,['.'],8], {}],                        # final
     [[0,['What'],9], dict(question=True)],
     [[9,['is'],10],{}],
     [[10,directions,11], dict(direction=True)],

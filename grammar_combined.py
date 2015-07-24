@@ -1,6 +1,5 @@
-# this is for facebook task QA2: two supporting facts
-# ../Data/tasks_1-20_v1-2/en/qa1_single-supporting-fact_test.txt
-# There are two end states: 6 for assertions, and 11 for questions.
+# this is for facebook task QA6
+# ../Data/tasks_1-20_v1-2/en/qa6_yes-no-questions_test.txt
 
 locations = ['bathroom', 'bedroom', 'garden', 'hallway', 'kitchen', 'office']
 
@@ -18,7 +17,7 @@ locVerbs = ['moved', 'journeyed', 'travelled', 'went']
 getVerbs = ['got', 'grabbed', 'took']  # + picked up
 putVerbs = ['discarded', 'dropped', 'left'] # + put down 
 words = ['.', '?', 'daniel', 'john', 'mary', 'sandra',
-        'where', 'apple', 'back', 'bathroom', 'bedroom', 'discarded', 'down',
+        'apple', 'back', 'bathroom', 'bedroom', 'discarded', 'down',
         'dropped', 'football', 'garden', 'got', 'grabbed', 'hallway', 'is',
         'journeyed', 'kitchen', 'left', 'milk', 'moved', 'office', 'picked',
         'put', 'the', 'there', 'to', 'took', 'travelled', 'up', 'went']
@@ -51,11 +50,17 @@ TRANSITIONS = \
     [[16, ['down'], 12], {}],
     [[2,['back'],17],{}],
     [[17,['to'],3],{}],
-    [[0,['where'],18],dict(question=True)],
-    [[18,['is'],19],{}],
-    [[19,['the'],20],{}],
-    [[20,objects,21], dict(object=True)],
-    [[21,['?'],22],{}]]                   # final
+    [[0,['is'],18],dict(question=True)],
+    [[18,['people'],19], dict(person=True)],
+    [[19,['in'],20], {}],
+    [[20,['the'],21],{}],
+    [[21,locations,22], dict(location=True)],
+    [[22,['?'],23],{}],                   # final
+    [[0,['where'],24],dict(question=True)],
+    [[24,['is'],25],{}],
+    [[25,['the'],26],{}],
+    [[26,objects,22], dict(object=True)],
+    [[25,['people'],22], dict(person=True)]]
 
 NUMBER_WORDS = len(words)+1
 
@@ -68,4 +73,4 @@ NUMBER_STATES = NUMBER_SYNSTATES + NUMBER_PEOPLE + NUMBER_LOCS + NUMBER_OBJS
 
 
 finalSynStateAssertion = 6
-finalSynStateQuery = 22
+finalSynStateQuery = 23
