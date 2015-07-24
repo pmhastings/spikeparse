@@ -2,6 +2,13 @@ import pyNN.spiNNaker as p
 import memory_for_parser as mem
 import parse as parser
 
+import sys
+inputArgLength = len (sys.argv)
+if inputArgLength != 2:
+    simulator_name = "spiNNaker"
+else:
+    simulator_name = sys.argv[1]
+
 NUMBER_PEOPLE = 10
 NUMBER_LOCS = 10
 NUMBER_OBJS = 10
@@ -13,7 +20,7 @@ play = True
 p.setup(timestep=1.0, min_delay = 1.0, max_delay = max_delay)
 
 #parser.parse_no_run('spiNNaker', "Daniel went to the bathroom. John went to the hallway. Where is John?")
-parser.parse_no_run2('spiNNaker')
+parser.parse_no_run2(simulator_name)
 
 [input_populations, state_populations, output_populations, projections] = mem.memory(NUMBER_PEOPLE, NUMBER_LOCS, NUMBER_OBJS)
 
