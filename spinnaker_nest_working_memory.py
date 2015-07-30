@@ -3,6 +3,7 @@ from nest import Connect
 #import pyNN.spiNNaker as p
 #import spynnaker_external_devices_plugin.pyNN as ExternalDevices
 import pylab as pl
+import plotMemSpikesVolts as pmsv
 
 input_reps = 5
 delay_reps = 2
@@ -11,9 +12,9 @@ subjects = 10
 locations = 10
 objects = 10
 
-weight_to_spike = 2.0
-weight_to_gate = weight_to_spike * 0.06
-weight_to_control = weight_to_spike * 0.5
+weight_to_spike = 0.04 # 0.03 0.05 0.1 0.2  0.5  1.0 2.0
+weight_to_gate = weight_to_spike * 0.1 # 0.2 0.4 0.5  # 0.06
+weight_to_control = weight_to_spike * 0.6 # 0.5
 weight_to_inhibit = weight_to_spike * 5
 max_delay = 100.0
 
@@ -59,27 +60,6 @@ stdp_model = p.STDPMechanism(
 
 # s_d = p.SynapseDynamics(slow = stdp_model)
 
-# would have to check type of connector.  If it's AllToAllConnector, then make the list
-# def peterProjection(preNeurons,postNeurons, connector, synapse_type = None, receptor_type="excitatory"):
-#     if simulator_name == 'spiNNaker':
-#         Projection(preNeurons, postNeurons, connector, synapse_type = synapse_type, receptor_type=receptor_type)
-#     elif simulator_name == 'nest':
-#         # Projection(preNeurons, postNeurons, connectorList)
-#         if isinstance(connector,p.AllToAllConnector):
-#             Connect(preNeurons,postNeurons, 'all_to_all', ) # need syn_spec
-#         elif isinstance(connector,p.OneToOneConnector):
-#             Connect(preNeurons,postNeurons, 'one_to_one', ) # need syn_spec
-#         elif isinstance(connector,p.FromListConnector):
-#             for connection in connector.conn_list:
-#                 Connect(preNeurons[connection[0]],postNeurons[connection[1]],
-#                         {'weight':connection[2]}, receptor_type=receptor_type)
-#         else:
-#             print 'bad connection type for peterProjection'
-#     else:
-#         print 'bad simulator for peterProjection'
-
-        
-
 statement_binding_sub_loc = p.Projection(pop_subject, pop_locations, p.AllToAllConnector(), synapse_type = stdp_model, receptor_type="excitatory")
 statement_binding_loc_sub = p.Projection(pop_locations, pop_subject, p.AllToAllConnector(), synapse_type = stdp_model, receptor_type="excitatory")
 statement_binding_sub_obj = p.Projection(pop_subject, pop_object, p.AllToAllConnector(), synapse_type = stdp_model, receptor_type="excitatory")
@@ -97,9 +77,9 @@ input_objects = p.Population(objects, p.IF_cond_exp, cell_params_lif, label='inp
 
 network_stabilizer = p.Population(1, p.IF_cond_exp, cell_params_lif, label='network_stabilizer')
 
-stabilize_subjects = p.Projection(network_stabilizer, pop_subject, p.AllToAllConnector(), synapse_type=p.StaticSynapse(weight = -weight_to_inhibit, delay = 1), receptor_type = "inhibitory")
-stabilize_locations = p.Projection(network_stabilizer, pop_locations, p.AllToAllConnector(), synapse_type=p.StaticSynapse(weight = -weight_to_inhibit, delay = 1), receptor_type = "inhibitory")
-stabilize_objects = p.Projection(network_stabilizer, pop_object, p.AllToAllConnector(), synapse_type=p.StaticSynapse(weight = -weight_to_inhibit, delay = 1), receptor_type = "inhibitory")
+stabilize_subjects = p.Projection(network_stabilizer, pop_subject, p.AllToAllConnector(), synapse_type=p.StaticSynapse(weight = weight_to_inhibit, delay = 1), receptor_type = "inhibitory")
+stabilize_locations = p.Projection(network_stabilizer, pop_locations, p.AllToAllConnector(), synapse_type=p.StaticSynapse(weight = weight_to_inhibit, delay = 1), receptor_type = "inhibitory")
+stabilize_objects = p.Projection(network_stabilizer, pop_object, p.AllToAllConnector(), synapse_type=p.StaticSynapse(weight = weight_to_inhibit, delay = 1), receptor_type = "inhibitory")
 
 list_connector = [[i, i+1, weight_to_spike, delay_reps] for i in xrange (input_reps-1)]
 
@@ -111,6 +91,7 @@ input_subject_inh_locations = list()
 input_subject_inh_conn = list()
 for i in xrange (subjects):
     input_pop_subject.append( p.Population(input_reps, p.IF_cond_exp, cell_params_lif, label='pop_subject_input_{0:d}'.format(i)) )
+    # connect input_pop_subj[0][0] to input_pop_subj[0][1], input_pop_subj[0][1] to input_pop_subj[0][2], ??
     input_pop_subject_int_conn.append( p.Projection(input_pop_subject[i], input_pop_subject[i], p.FromListConnector(list_connector)) )
     list_connector2 = list()
     for j in xrange (input_reps):
@@ -118,8 +99,8 @@ for i in xrange (subjects):
     print "Subjects {0:d}: {1:s}".format(i, list_connector2)
     input_subject_conn.append( p.Projection(input_pop_subject[i], pop_subject, p.FromListConnector(list_connector2)) )
     input_subject_injection.append( p.Projection(input_subjects, input_pop_subject[i], p.FromListConnector([[i, 0, weight_to_spike, 1]])) )
-    input_subject_inh_locations = p.Projection(input_pop_subject[i], pop_locations, p.AllToAllConnector(), synapse_type=p.StaticSynapse(weight = -0.5*weight_to_spike, delay = 1), receptor_type='inhibitory')
-    input_subject_inh_objects = p.Projection(input_pop_subject[i], pop_object, p.AllToAllConnector(), synapse_type=p.StaticSynapse(weight = -0.5*weight_to_spike, delay = 1), receptor_type='inhibitory')
+    input_subject_inh_locations = p.Projection(input_pop_subject[i], pop_locations, p.AllToAllConnector(), synapse_type=p.StaticSynapse(weight = 0.5*weight_to_spike, delay = 1), receptor_type='inhibitory')
+    input_subject_inh_objects = p.Projection(input_pop_subject[i], pop_object, p.AllToAllConnector(), synapse_type=p.StaticSynapse(weight = 0.5*weight_to_spike, delay = 1), receptor_type='inhibitory')
     input_subject_inh_conn.append( p.Projection(input_pop_subject[i], network_stabilizer, p.FromListConnector([[input_reps-1, 0, weight_to_spike, 1]])) )
 
 input_pop_location = list()
@@ -135,41 +116,31 @@ for i in xrange (locations):
         list_connector2.append([j, i, 1.5*weight_to_spike, 1])
     print "Locations {0:d}: {1:s}".format(i, list_connector2)
     input_location_conn.append( p.Projection(input_pop_location[i], pop_locations, p.FromListConnector(list_connector2)) )
-    print "loc injection"
     input_location_injection.append( p.Projection(input_locations, input_pop_location[i], p.FromListConnector([[i, 0, weight_to_spike, 1]])) )
-    print "loc inhib subj"
-    input_location_inh_subjects = p.Projection(input_pop_location[i], pop_subject, p.AllToAllConnector(), synapse_type=p.StaticSynapse(weight = -0.5*weight_to_spike, delay = 1), receptor_type='inhibitory')
-    print "loc inhib obj"
-    input_location_inh_objects = p.Projection(input_pop_location[i], pop_object, p.AllToAllConnector(), synapse_type=p.StaticSynapse(weight = -0.5*weight_to_spike, delay = 1), receptor_type='inhibitory')
-    print "stabilizer"
+    input_location_inh_subjects = p.Projection(input_pop_location[i], pop_subject, p.AllToAllConnector(), synapse_type=p.StaticSynapse(weight = 0.5*weight_to_spike, delay = 1), receptor_type='inhibitory')
+    input_location_inh_objects = p.Projection(input_pop_location[i], pop_object, p.AllToAllConnector(), synapse_type=p.StaticSynapse(weight = 0.5*weight_to_spike, delay = 1), receptor_type='inhibitory')
     input_location_inh_conn.append( p.Projection(input_pop_location[i], network_stabilizer, p.FromListConnector([[input_reps-1, 0, weight_to_spike, 1]])) )
 
-# print "after"
+
 input_pop_object = list()
 input_pop_object_int_conn = list()
 input_object_conn = list()
 input_object_injection = list()
 input_object_inh_conn = list()
-## print "xrange"
 for i in xrange (objects):
     input_pop_object.append( p.Population(input_reps, p.IF_cond_exp, cell_params_lif, label='pop_object_input_{0:d}'.format(i)) )
-    #print "p2"
     input_pop_object_int_conn.append( p.Projection(input_pop_object[i], input_pop_object[i], p.FromListConnector(list_connector)) )
     list_connector2 = list()
     for j in xrange (input_reps):
         list_connector2.append([j, i, 1.5*weight_to_spike, 1])
-    #print "Objects {0:d}: {1:s}".format(i, list_connector2)
-    #print "p3"
+    print "Objects {0:d}: {1:s}".format(i, list_connector2)
     input_object_conn.append( p.Projection(input_pop_object[i], pop_object, p.FromListConnector(list_connector2)) )
-    #print "p4"
     input_object_injection.append( p.Projection(input_objects, input_pop_object[i], p.FromListConnector([[i, 0, weight_to_spike, 1]]), receptor_type="excitatory"))
-    #print "p5"
-    input_object_inh_subjects = p.Projection(input_pop_object[i], pop_subject, p.AllToAllConnector(), synapse_type=p.StaticSynapse(weight = -0.5*weight_to_spike, delay = 1), receptor_type='inhibitory') 
-    #print "p6"
-    input_object_inh_locations = p.Projection(input_pop_object[i], pop_locations, p.AllToAllConnector(), synapse_type=p.StaticSynapse(weight = -0.5*weight_to_spike, delay = 1), receptor_type='inhibitory') 
-    # print "p7"
+    input_object_inh_subjects = p.Projection(input_pop_object[i], pop_subject, p.AllToAllConnector(), synapse_type=p.StaticSynapse(weight = 0.5*weight_to_spike, delay = 1), receptor_type='inhibitory') 
+    input_object_inh_locations = p.Projection(input_pop_object[i], pop_locations, p.AllToAllConnector(), synapse_type=p.StaticSynapse(weight = 0.5*weight_to_spike, delay = 1), receptor_type='inhibitory') 
     input_object_inh_conn.append( p.Projection(input_pop_object[i], network_stabilizer, p.FromListConnector([[input_reps-1, 0, weight_to_spike, 1]])) )
 
+    
 who = p.Population(1, p.IF_cond_exp, cell_params_lif, label='who')
 where = p.Population(1, p.IF_cond_exp, cell_params_lif, label='where')
 what = p.Population(1, p.IF_cond_exp, cell_params_lif, label='what')
@@ -190,22 +161,22 @@ where_gate_inh_conn = list()
 what_gate_inh_conn = list()
 
 # print "self inhibit"
-who_self_inh = p.Projection(who_gate, who_gate, p.AllToAllConnector(), synapse_type=p.StaticSynapse(weight=-2*weight_to_inhibit, delay=1), receptor_type="inhibitory")
-where_self_inh = p.Projection(where_gate, where_gate, p.OneToOneConnector(), synapse_type=p.StaticSynapse(weight=-2*weight_to_inhibit, delay=1), receptor_type="inhibitory")
-what_self_inh = p.Projection(what_gate, what_gate, p.AllToAllConnector(), synapse_type=p.StaticSynapse(weight=-2*weight_to_inhibit, delay=1), receptor_type="inhibitory")
+who_self_inh = p.Projection(who_gate, who_gate, p.AllToAllConnector(), synapse_type=p.StaticSynapse(weight=2*weight_to_inhibit, delay=1), receptor_type="inhibitory")
+where_self_inh = p.Projection(where_gate, where_gate, p.OneToOneConnector(), synapse_type=p.StaticSynapse(weight=2*weight_to_inhibit, delay=1), receptor_type="inhibitory")
+what_self_inh = p.Projection(what_gate, what_gate, p.AllToAllConnector(), synapse_type=p.StaticSynapse(weight=2*weight_to_inhibit, delay=1), receptor_type="inhibitory")
 
 # print "gate inhibit"
-who_gate_inh_conn.append( p.Projection(who_gate, pop_subject, p.AllToAllConnector(), synapse_type=p.StaticSynapse(weight = -weight_to_inhibit, delay = 1), receptor_type="inhibitory") )
-who_gate_inh_conn.append( p.Projection(who_gate, pop_locations, p.AllToAllConnector(), synapse_type=p.StaticSynapse(weight = -weight_to_inhibit, delay = 1), receptor_type="inhibitory") )
-who_gate_inh_conn.append( p.Projection(who_gate, pop_object, p.AllToAllConnector(), synapse_type=p.StaticSynapse(weight = -weight_to_inhibit, delay = 1), receptor_type="inhibitory") )
+who_gate_inh_conn.append( p.Projection(who_gate, pop_subject, p.AllToAllConnector(), synapse_type=p.StaticSynapse(weight = weight_to_inhibit, delay = 1), receptor_type="inhibitory") )
+who_gate_inh_conn.append( p.Projection(who_gate, pop_locations, p.AllToAllConnector(), synapse_type=p.StaticSynapse(weight = weight_to_inhibit, delay = 1), receptor_type="inhibitory") )
+who_gate_inh_conn.append( p.Projection(who_gate, pop_object, p.AllToAllConnector(), synapse_type=p.StaticSynapse(weight = weight_to_inhibit, delay = 1), receptor_type="inhibitory") )
 
-where_gate_inh_conn.append( p.Projection(where_gate, pop_subject, p.AllToAllConnector(), synapse_type=p.StaticSynapse(weight = -weight_to_inhibit, delay = 1), receptor_type="inhibitory") )
-where_gate_inh_conn.append( p.Projection(where_gate, pop_locations, p.AllToAllConnector(), synapse_type=p.StaticSynapse(weight = -weight_to_inhibit, delay = 1), receptor_type="inhibitory") )
-where_gate_inh_conn.append( p.Projection(where_gate, pop_object, p.AllToAllConnector(), synapse_type=p.StaticSynapse(weight = -weight_to_inhibit, delay = 1), receptor_type="inhibitory") )
+where_gate_inh_conn.append( p.Projection(where_gate, pop_subject, p.AllToAllConnector(), synapse_type=p.StaticSynapse(weight = weight_to_inhibit, delay = 1), receptor_type="inhibitory") )
+where_gate_inh_conn.append( p.Projection(where_gate, pop_locations, p.AllToAllConnector(), synapse_type=p.StaticSynapse(weight = weight_to_inhibit, delay = 1), receptor_type="inhibitory") )
+where_gate_inh_conn.append( p.Projection(where_gate, pop_object, p.AllToAllConnector(), synapse_type=p.StaticSynapse(weight = weight_to_inhibit, delay = 1), receptor_type="inhibitory") )
 
-what_gate_inh_conn.append( p.Projection(what_gate, pop_subject, p.AllToAllConnector(), synapse_type=p.StaticSynapse(weight = -weight_to_inhibit, delay = 1), receptor_type="inhibitory") )
-what_gate_inh_conn.append( p.Projection(what_gate, pop_locations, p.AllToAllConnector(), synapse_type=p.StaticSynapse(weight = -weight_to_inhibit, delay = 1), receptor_type="inhibitory") )
-what_gate_inh_conn.append( p.Projection(what_gate, pop_object, p.AllToAllConnector(), synapse_type=p.StaticSynapse(weight = -weight_to_inhibit, delay = 1), receptor_type="inhibitory") )
+what_gate_inh_conn.append( p.Projection(what_gate, pop_subject, p.AllToAllConnector(), synapse_type=p.StaticSynapse(weight = weight_to_inhibit, delay = 1), receptor_type="inhibitory") )
+what_gate_inh_conn.append( p.Projection(what_gate, pop_locations, p.AllToAllConnector(), synapse_type=p.StaticSynapse(weight = weight_to_inhibit, delay = 1), receptor_type="inhibitory") )
+what_gate_inh_conn.append( p.Projection(what_gate, pop_object, p.AllToAllConnector(), synapse_type=p.StaticSynapse(weight = weight_to_inhibit, delay = 1), receptor_type="inhibitory") )
 
 # print "gate to stabilizer"
 who_network_stabilize = p.Projection(who_gate, network_stabilizer, p.AllToAllConnector(), synapse_type=p.StaticSynapse(weight = weight_to_spike, delay = 1), receptor_type="excitatory")
@@ -257,45 +228,31 @@ ExternalDevices.activate_live_output_for(what_gate)
 
 #simulate a sentence to link first subject and first location
 #and then ask for the location of the first subject
-injection1a = {'spike_times' : [50]}
+# injection1a = {'spike_times' : [50]}
+# injection1b = {'spike_times' : [250]}
+# injection1c = {'spike_times' : [450]}
+# injection2 = {'spike_times' : [800]}
+# injection3 = {'spike_times' : [806]}
 
-injection1b = {'spike_times' : [250]}
+ss1a = p.Population(1, p.SpikeSourceArray, {'spike_times' : [50]})
+ss1b = p.Population(1, p.SpikeSourceArray, {'spike_times' : [250]})
+ss1c = p.Population(1, p.SpikeSourceArray, {'spike_times' : [450]})
+ss2 = p.Population(1, p.SpikeSourceArray, {'spike_times' : [800]})
+ss3 = p.Population(1, p.SpikeSourceArray, {'spike_times' : [806]})
 
-injection1c = {'spike_times' : [450]}
-
-injection2 = {'spike_times' : [800]}
-
-injection3 = {'spike_times' : [806]}
-
-ss1a = p.Population(1, p.SpikeSourceArray, injection1a)
-
-ss1b = p.Population(1, p.SpikeSourceArray, injection1b)
-
-ss1c = p.Population(1, p.SpikeSourceArray, injection1c)
-
-ss2 = p.Population(1, p.SpikeSourceArray, injection2)
-
-ss3 = p.Population(1, p.SpikeSourceArray, injection3)
-
-#john has a ball
-# print "john has a ball"
-# ss1a_inj_1 = p.Projection(ss1a, input_subjects, p.FromListConnector([[0, 0, weight_to_spike, 1]]))
-# print "jhab2"
-# ss1a_inj_2 = p.Projection(ss1a, input_objects, p.FromListConnector([[0, 0, weight_to_spike, 1]]))
-
+# at 50ms, activate input_subjects[John], and input_objects[ball]
 # print "john has a ball"
 ss1a_inj_1 = p.Projection(ss1a, input_subjects, p.FromListConnector([[0, 0, weight_to_spike, 1]]),
                           synapse_type=p.StaticSynapse())
-# print "jhab2"
 ss1a_inj_2 = p.Projection(ss1a, input_objects, p.FromListConnector([[0, 0, weight_to_spike, 1]]),
                           synapse_type=p.StaticSynapse())
 
-#john is in the kitchen
+# at 250ms, activate input_subjects[John], and input_locations[kitchen]
 # print "john is in the kitchen"
 ss1b_inj_1 = p.Projection(ss1b, input_subjects, p.FromListConnector([[0, 0, weight_to_spike, 1]]))
 ss1b_inj_1 = p.Projection(ss1b, input_locations, p.FromListConnector([[0, 0, weight_to_spike, 1]]))
 
-#sergio is in the kitchen
+# at 450ms, activate input_subjects[Sergio], and input_locations[kitchen]
 # print "sergio is in the kitchen"
 ss1c_inj_1 = p.Projection(ss1c, input_subjects, p.FromListConnector([[0, 1, weight_to_spike, 1]]))
 ss1c_inj_1 = p.Projection(ss1c, input_locations, p.FromListConnector([[0, 0, weight_to_spike, 1]]))
@@ -304,16 +261,28 @@ ss1c_inj_1 = p.Projection(ss1c, input_locations, p.FromListConnector([[0, 0, wei
 #ss2_inj = p.Projection(ss2, query_pop_object, p.FromListConnector([[0, 0, weight_to_spike, 1]]))
 
 #who is in the kitchen
+# at 800 ms, activate query_pop_locations[kitchen]
 # print "who is in the kitchen"
 ss2_inj = p.Projection(ss2, query_pop_locations, p.FromListConnector([[0, 0, weight_to_spike, 1]]))
 
-# print "ss3"
+# at 806 ms, activate "who"
 ss3_inj = p.Projection(ss3, who, p.FromListConnector([[0, 0, weight_to_spike, 1]]))
 
 print "record"
-who_gate.record('v')
-where_gate.record('v')
-what_gate.record('v')
+pop_subject.record('spikes')
+pop_locations.record('spikes')
+pop_object.record('spikes')
+who_gate.record('spikes')
+where_gate.record('spikes')
+what_gate.record('spikes')
+who_gate.record(['v'])
+
+# who_gate.record('spikes')
+# who_gate.record(['v'])   #, 'gsyn_exc'])
+# where_gate.record('spikes')
+# where_gate.record(['v']) #, 'gsyn_exc'])
+# what_gate.record('spikes')
+# what_gate.record(['v'])  #, 'gsyn_exc'])
 
 '''
 #recording section
@@ -360,9 +329,16 @@ query_pop_subject.record()
 p.run(1 * 1000)
 #p.run(2.5 * 60 * 1000)
 
-who_gate_spikes = who_gate.getSpikes(compatible_output=True)
-where_gate_spikes = where_gate.getSpikes(compatible_output=True)
-what_gate_spikes = what_gate.getSpikes(compatible_output=True)
+# who_gate_spikes = who_gate.getSpikes(compatible_output=True)
+# where_gate_spikes = where_gate.getSpikes(compatible_output=True)
+# what_gate_spikes = what_gate.getSpikes(compatible_output=True)
+
+# who_gate_spikes = who_gate.get_data()
+# where_gate_spikes = where_gate.get_data()
+# what_gate_spikes = what_gate.get_data()
+
+# pms.plotMemSpikes([pop_subject, pop_locations, pop_object, who_gate, where_gate, what_gate ])
+pmsv.plotMemSpikesVolts(pop_subject,who_gate)
 
 '''
 pop_subject_spikes = pop_subject.getSpikes(compatible_output=True)
@@ -390,14 +366,14 @@ thefile.close()
 #
 '''
 
-print "Who:"
-print who_gate_spikes
+# print "Who:"
+# print who_gate_spikes
 
-print "Where:"
-print where_gate_spikes
+# print "Where:"
+# print where_gate_spikes
 
-print "What:"
-print what_gate_spikes
+# print "What:"
+# print what_gate_spikes
 
 '''
 #retrieving section
