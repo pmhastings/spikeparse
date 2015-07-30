@@ -1,8 +1,9 @@
 import pyNN.nest as p
-from nest import Connect
+# from nest import Connect
 #import pyNN.spiNNaker as p
 #import spynnaker_external_devices_plugin.pyNN as ExternalDevices
 import pylab as pl
+import plotMemSpikes as pms
 import plotMemSpikesVolts as pmsv
 
 input_reps = 5
@@ -12,9 +13,9 @@ subjects = 10
 locations = 10
 objects = 10
 
-weight_to_spike = 0.04 # 0.03 0.05 0.1 0.2  0.5  1.0 2.0
+weight_to_spike = 0.035 # 0.04 0.03 0.05 0.1 0.2  0.5  1.0 2.0
 weight_to_gate = weight_to_spike * 0.1 # 0.2 0.4 0.5  # 0.06
-weight_to_control = weight_to_spike * 0.6 # 0.5
+weight_to_control = weight_to_spike * 0.5 # 0.6
 weight_to_inhibit = weight_to_spike * 5
 max_delay = 100.0
 
@@ -50,7 +51,8 @@ what_gate = p.Population(objects, p.IF_cond_exp, cell_params_lif, label='what_ga
 #symmetric STDP rule
 # Plastic Connection between pre_pop and post_pop
 # PH: the A_plus, minus params seem to have moved from Additive.. to SpikePair...
-t_rule = p.SpikePairRule(tau_plus=0.5, tau_minus=0.5, A_plus=weight_to_spike, A_minus=-weight_to_spike)
+# t_rule = p.SpikePairRule(tau_plus=0.5, tau_minus=0.5, A_plus=weight_to_spike, A_minus=-weight_to_spike)
+t_rule = p.SpikePairRule(tau_plus=5.0, tau_minus=5.0, A_plus=weight_to_spike, A_minus=-weight_to_spike)
 w_rule = p.AdditiveWeightDependence(w_min=0.0, w_max=weight_to_spike) # , A_plus=weight_to_spike, A_minus=-weight_to_spike)
 stdp_model = p.STDPMechanism(
     timing_dependence = t_rule,
@@ -235,8 +237,11 @@ ExternalDevices.activate_live_output_for(what_gate)
 # injection3 = {'spike_times' : [806]}
 
 ss1a = p.Population(1, p.SpikeSourceArray, {'spike_times' : [50]})
+ss1a2 = p.Population(1, p.SpikeSourceArray, {'spike_times' : [53]})
 ss1b = p.Population(1, p.SpikeSourceArray, {'spike_times' : [250]})
+ss1b2 = p.Population(1, p.SpikeSourceArray, {'spike_times' : [253]})
 ss1c = p.Population(1, p.SpikeSourceArray, {'spike_times' : [450]})
+ss1c2 = p.Population(1, p.SpikeSourceArray, {'spike_times' : [453]})
 ss2 = p.Population(1, p.SpikeSourceArray, {'spike_times' : [800]})
 ss3 = p.Population(1, p.SpikeSourceArray, {'spike_times' : [806]})
 
@@ -244,18 +249,18 @@ ss3 = p.Population(1, p.SpikeSourceArray, {'spike_times' : [806]})
 # print "john has a ball"
 ss1a_inj_1 = p.Projection(ss1a, input_subjects, p.FromListConnector([[0, 0, weight_to_spike, 1]]),
                           synapse_type=p.StaticSynapse())
-ss1a_inj_2 = p.Projection(ss1a, input_objects, p.FromListConnector([[0, 0, weight_to_spike, 1]]),
+ss1a_inj_2 = p.Projection(ss1a2, input_objects, p.FromListConnector([[0, 0, weight_to_spike, 1]]),
                           synapse_type=p.StaticSynapse())
 
 # at 250ms, activate input_subjects[John], and input_locations[kitchen]
 # print "john is in the kitchen"
 ss1b_inj_1 = p.Projection(ss1b, input_subjects, p.FromListConnector([[0, 0, weight_to_spike, 1]]))
-ss1b_inj_1 = p.Projection(ss1b, input_locations, p.FromListConnector([[0, 0, weight_to_spike, 1]]))
+ss1b_inj_1 = p.Projection(ss1b2, input_locations, p.FromListConnector([[0, 0, weight_to_spike, 1]]))
 
 # at 450ms, activate input_subjects[Sergio], and input_locations[kitchen]
 # print "sergio is in the kitchen"
 ss1c_inj_1 = p.Projection(ss1c, input_subjects, p.FromListConnector([[0, 1, weight_to_spike, 1]]))
-ss1c_inj_1 = p.Projection(ss1c, input_locations, p.FromListConnector([[0, 0, weight_to_spike, 1]]))
+ss1c_inj_1 = p.Projection(ss1c2, input_locations, p.FromListConnector([[0, 0, weight_to_spike, 1]]))
 
 #who has the ball
 #ss2_inj = p.Projection(ss2, query_pop_object, p.FromListConnector([[0, 0, weight_to_spike, 1]]))
@@ -337,7 +342,7 @@ p.run(1 * 1000)
 # where_gate_spikes = where_gate.get_data()
 # what_gate_spikes = what_gate.get_data()
 
-# pms.plotMemSpikes([pop_subject, pop_locations, pop_object, who_gate, where_gate, what_gate ])
+pms.plotMemSpikes([pop_subject, pop_locations, pop_object, who_gate, where_gate, what_gate ])
 pmsv.plotMemSpikesVolts(pop_subject,who_gate)
 
 '''

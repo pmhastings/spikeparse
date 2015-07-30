@@ -11,6 +11,7 @@ def plot_spiketrains(label, segment):
         plt.ylabel(label)    # segment.name)
         plt.setp(plt.gca().get_xticklabels(), visible=False)
     plt.ylim([0,num_items-1])
+    plt.xlim([0,SIM_LENGTH])
 
 # def plot_signal(signal, index, colour='b'):
 #     label = "Neuron %d" % signal.annotations['source_ids'][index]
