@@ -3,11 +3,11 @@
 # There are two end states: 6 for assertions, and 11 for questions.
 # from parse import makeTransition
 
-locations = ["kitchen", "bedroom", "bathroom", "hallway", "garden"]
+locations = ["kitchen", "bedroom", "bathroom", "hallway", "garden", "office"]
 people = ['daniel', 'john', 'mary', 'sandra']
 objects = []
 questions = ['where']
-locVerbs = ["went", "journeyed", "travelled", "traveled"]
+locVerbs = ["went", "moved", "journeyed", "travelled", "traveled"]
 words = ['?',
         '.',
         'daniel',
