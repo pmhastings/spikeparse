@@ -16,8 +16,8 @@ from grammar_qa1 import *
 from readInput import *     #for nest processing of text sentences
 
 plot = False
-spikeServe= False
-#spikeServe= True
+#spikeServe= False
+spikeServe= True
 
 if plot:
     from pyNN.utility.plotting import Figure, Panel
