@@ -13,9 +13,11 @@ import pylab as pl
 import re
 
 from grammar_qa1 import *
+from readInput import *     #for nest processing of text sentences
 
 plot = False
-spikeServe= True
+spikeServe= False
+#spikeServe= True
 
 if plot:
     from pyNN.utility.plotting import Figure, Panel
@@ -332,26 +334,34 @@ def setInputs():
             inputSources[i]=Population(1,SpikeSourceArray,{'spike_times':spikes})
 
     elif simulator_name == 'nest':
-        # why the diff in params? Different time constants for parsing.
-        for i in range(0,7): 
-            spikes = [[(i+1)*50]]
-            print 'hey', i, (i*20)+7.0
-            inputSources[i]=Create('spike_generator',
-                                        params={'spike_times': [(i*20)+7.0,(i*20)+10.0]})
-        for i in range(7,14): 
-            spikes = [[(i+3)*50]]
-            print 'ho', i, (i*20)+60.0
-            inputSources[i]=Create('spike_generator',
-                                        params={'spike_times': [(i*20)+60.0,(i*20)+63.0]})
+        #print "crh", sentence, " ", len (sentence)
+        inputSources = []
+        for i in range (0,len(sentence)+15):
+            inputSources = inputSources+[i]
 
-        for i in range(14,19): 
-            spikes = [[(i+3)*50]]
-            print 'h3', i, (i*20)+120.0
-            inputSources[i]=Create('spike_generator',
-                                        params={'spike_times': [(i*20)+120.0,(i*20)+123.0]})
+        inpSource = 0
+        time = 7.0
+        sentOff = 0
+        for sent in range (0,15):
+            inputSources[inpSource]=Create('spike_generator',
+                                params={'spike_times': [time, time+3.0]})
+            inpSource = inpSource+1
+            time = time + 20.0
+            while ((sentence[sentOff] != ".") and (sentence[sentOff] != "?")):
+                inputSources[inpSource]=Create('spike_generator',
+                                params={'spike_times': [time, time+3.0]})
+                inpSource = inpSource+1
+                time = time + 20.0
+                sentOff = sentOff+1
 
+            inputSources[inpSource]=Create('spike_generator',
+                                params={'spike_times': [time, time+3.0]})
+            inpSource = inpSource+1
+            sentOff = sentOff+1
+            time = time + 60.0
+            sent = sent+1      
+            
 
-###----Make Synapses
 
 #The start state, and each word have an input connection
 #link those to the appropriate (state) words
@@ -363,13 +373,13 @@ def setInputConnections():
 
     if simulator_name == 'spiNNaker':
         synWeight = 20.0
-    else:
+    elif simulator_name == 'nest':
         synWeight = 40.0
 
     # starter
     if spikeServe:
         print 'nop'
-    else:
+    elif simulator_name == 'spiNNaker':
         connector = []
         for toNeuron in range (0,5):
             connector=connector+[(0,toNeuron,synWeight,DELAY)]
@@ -402,7 +412,42 @@ def setInputConnections():
                     toNeuron = lookupWord(sentence[i])*5 + toOff
                     connector=connector+[(0,toNeuron,synWeight,DELAY)]
             peterProjection(inputSources[i+3],WordsCells,connector,'excitatory')
+    elif simulator_name == 'nest':
+        newParseStateConnector = []
+        for toNeuron in range (0,5):
+            newParseStateConnector=newParseStateConnector+[(0,toNeuron,synWeight,DELAY)]
 
+        inpSource = 0
+        sentOff = 0
+        for sent in range (0,15):
+            #make connections to start state
+            peterProjection(inputSources[inpSource],StatesCells,
+                            newParseStateConnector,'excitatory') 
+            inpSource = inpSource+1
+
+            #make connections to words
+            while ((sentence[sentOff] != ".") and (sentence[sentOff] != "?")):
+                connector = []
+                for toOff in range (0,5):
+                    toNeuron = lookupWord(sentence[sentOff])*5 + toOff
+                    connector=connector+[(0,toNeuron,synWeight,DELAY)]
+                peterProjection(inputSources[inpSource],WordsCells,
+                                    connector,'excitatory')
+
+                inpSource = inpSource+1
+                sentOff = sentOff+1
+
+            #period or question mark and next sentence
+            connector = []
+            for toOff in range (0,5):
+                toNeuron = lookupWord(sentence[sentOff])*5 + toOff
+                connector=connector+[(0,toNeuron,synWeight,DELAY)]
+            peterProjection(inputSources[inpSource],WordsCells,
+                                    connector,'excitatory')
+            
+            inpSource = inpSource+1
+            sentOff = sentOff+1
+            sent = sent+1
 
 
 def lookupWord(word):
@@ -457,12 +502,11 @@ def makeTransition(preNum, catWords, postNum,
                                         questions.index(word),
                                         wordToSemStateWeight)
         
-
 def connectSemToOutputGate():
     if simulator_name == 'spiNNaker':
         synWeight = 0.025 #0.02 too little 0.06 one does it.
     elif simulator_name == 'nest':
-        print 'have not tested'
+        synWeight = 2.0  #1.2 is too little  2.0 pops at second sem second spike
     connector = []
     semCAStart = NUMBER_SYNSTATES 
     semCAFinish = NUMBER_SYNSTATES + NUMBER_PEOPLE + NUMBER_LOCS + NUMBER_OBJS + NUMBER_QUES 
@@ -481,7 +525,7 @@ def connectOutputGateToOutput():
     if simulator_name == 'spiNNaker':
         synWeight = 0.13 
     elif simulator_name == 'nest':
-        print 'have not tested'
+        synWeight = 2.0 #.13 too low 
     connector = []
     outputCAs = NUMBER_PEOPLE + NUMBER_LOCS + NUMBER_OBJS + NUMBER_QUES 
     for fromNeuron in range (0,5):
@@ -511,12 +555,13 @@ def configureOutput():
     #weight_to_spike = 2.0
     if simulator_name == 'spiNNaker':
         weight_to_spike = 10.0
+        weight_sem_to_out = 0.02 
     elif simulator_name == 'nest':
         weight_to_spike = 10.0
+        weight_sem_to_out = 0.8 #Aug 3
 
     # weight_to_gate = weight_to_spike * 0.05
     weight_to_control = weight_to_spike * 0.2
-    weight_sem_to_out = 0.02 
     weight_to_inhibit = weight_to_spike * 0.05 # 1 # 2 # 5
     weight_to_turnoff = weight_to_spike * 0.5 # 1 # 2 # 5
 
@@ -558,12 +603,18 @@ def configureOutput():
                 connectors=connectors+[(fromNeuron,toNeuron,weight_to_control,DELAY)]
     peterProjection(StatesCells, pop_outputs, connectors,'excitatory')
 
+   
     # turnOffSem: - inhibitory - allToAll 30 * (5 * 5)
     # - from the outputs - to the semantic neurons
+    if simulator_name == 'spiNNaker':
+        stopAllStatesWeight = -0.5
+    elif simulator_name == 'nest':
+        stopAllStatesWeight = -12.0 #8.0 stops syn not sem
     connectors = []
     for fromNeuron in range (0,numOuts*5):
         for toNeuron in range (0,NUMBER_STATES*5):
-            connectors=connectors+[(fromNeuron,toNeuron,-0.5,DELAY)]
+            connectors=connectors+[(fromNeuron,toNeuron,stopAllStatesWeight,
+                                    DELAY)]
     peterProjection(pop_outputs, StatesCells, connectors,'inhibitory')
 
         
@@ -575,13 +626,13 @@ def setConnections():
     makeTransitions()
     connectSemToOutputGate()
     configureOutput()
-    connectOutputGateToOutput() #out of order because pop_out made in configOut
+    connectOutputGateToOutput() 
 
 ##--- record---
 
 # this is called from Main
 def setRecording():
-    global multS, multW, multOut, multSp
+    global multS, multW, multOut, multOutGate,multSp
     if simulator_name == 'spiNNaker':
         WordsCells.record()
         StatesCells.record()
@@ -602,6 +653,11 @@ def setRecording():
                       'interval': 1.0,
                       'record_from': ['V_m']})
         Connect(multOut, pop_outputs)
+
+        multOutGate= Create('multimeter', params = {'withtime': True, 
+                      'interval': 1.0,
+                      'record_from': ['V_m']})
+        Connect(multOutGate, OutputGateCells)
 
         multSp = Create('spike_detector')
         Connect(pop_outputs, multSp)
@@ -714,19 +770,26 @@ def printOutputs():
             count = count + 1
 
 def printOutputGate():
-    print "outputGate"
     if simulator_name == 'spiNNaker':
         OutputGateCells.printSpikes('results/parseOutputGate.sp')
     elif simulator_name == 'nest':
+        events = GetStatus(multOutGate)[0]['events']
+        volts=events.items()[0]
+        volts=volts[1]
+        count = 0
+        numNeurons = 5
+        for outp in volts:
+            print count/numNeurons, ' ' , count % numNeurons, ' ' ,outp
+            count = count + 1
         print 'nop'
 
 
 def printResults():
-    printWords()
-    printStates()
+    #return
+    #printWords()
+    #printStates()
     printOutputs()
-    printOutputGate()
-    print 'nop'
+    #printOutputGate()
 
 def getStates():
     return StatesCells
@@ -769,7 +832,7 @@ def parse(sim, sent):
     if simulator_name == 'spiNNaker':
         run(SIM_LENGTH)
     elif simulator_name == 'nest':
-        Simulate(SIM_LENGTH*0.5)
+        Simulate(4050)
 
     #--------------print results
     if simulator_name == 'spiNNaker':
@@ -781,6 +844,92 @@ def parse(sim, sent):
             nestPlot()
         else:
             printResults()
+
+def parseNestSMem(sim):
+    global simulator_name, sentence
+    simulator_name = sim
+    if simulator_name != 'nest':
+        print 'parseNestSMem should only be called with nest'
+        return
+
+    testNum = 0  #undone add support for calling different tests
+    hugeSentenceList = getSentences("train.txt")
+    sentence = ""
+    for sentenceNum in range ((testNum*15),(testNum+1)*15):
+        inputTuple = hugeSentenceList[sentenceNum]
+        Sentence = inputTuple[1]
+        lSentence = Sentence.lower()
+        sentence = sentence + " " + lSentence
+
+    sentence = re.findall(r"[\w']+|[.,!?;]", sentence)
+
+    grammar = "grammar_qa1"    
+    exec("from %s import *" % grammar)
+
+    ResetKernel()
+
+    #----------------create neurons
+    # parse = parseArea(simulator_name, sentence)
+    allocateParseNeurons()
+
+    #turn on the inputs
+    setInputs()
+
+    #---------setup connections
+    setConnections()
+
+    #-------------------setup recording
+    setRecording()
+
+    if simulator_name == 'spiNNaker':
+        run(SIM_LENGTH)
+    elif simulator_name == 'nest':
+        Simulate(4050)
+
+    #--------------print results
+    if simulator_name == 'spiNNaker':
+        #spinPlot()
+        printStates()
+        printOutputs()
+    elif simulator_name == 'nest':
+        if plot:
+            nestPlot()
+        else:
+            printResults()
+
+def parseNestSMemNoRun(sim):
+    global simulator_name, sentence
+    simulator_name = sim
+    if simulator_name != 'nest':
+        print 'parseNestSMem should only be called with nest'
+        return
+
+    testNum = 0  #undone add support for calling different tests
+    hugeSentenceList = getSentences("train.txt")
+    sentence = ""
+    for sentenceNum in range ((testNum*15),(testNum+1)*15):
+        inputTuple = hugeSentenceList[sentenceNum]
+        Sentence = inputTuple[1]
+        lSentence = Sentence.lower()
+        sentence = sentence + " " + lSentence
+
+    sentence = re.findall(r"[\w']+|[.,!?;]", sentence)
+
+    grammar = "grammar_qa1"    
+    exec("from %s import *" % grammar)
+
+    #----------------create neurons
+    # parse = parseArea(simulator_name, sentence)
+    allocateParseNeurons()
+
+    #turn on the inputs
+    setInputs()
+
+    #---------setup connections
+    setConnections()
+
+    #-------------------setup recording
+    setRecording()
 
 #To use with memory
 def parse_no_run(sim, sent):
@@ -858,7 +1007,6 @@ def parse_no_run2(sim):
     if spikeServe:
         playCells.record()
 
-            
 #------------Main Body---------------
 if __name__ == "__main__":
     global simulator_name
@@ -866,7 +1014,14 @@ if __name__ == "__main__":
     inputArgLength = len (sys.argv)
     if inputArgLength != 4:
         simulator_name = "nest"
-        sentence = "daniel went to the bathroom. john went to the hallway."
+        testNum = 0
+        hugeSentenceList = getSentences("train.txt")
+        sentence = ""
+        for sentenceNum in range ((testNum*15),(testNum+1)*15):
+            inputTuple = hugeSentenceList[sentenceNum]
+            Sentence = inputTuple[1]
+            lSentence = Sentence.lower()
+            sentence = sentence + " " + lSentence
         grammar = "grammar_qa1"    
     else:
         simulator_name = sys.argv[1]
@@ -887,25 +1042,6 @@ if __name__ == "__main__":
     parse(simulator_name,sentence)
 
 
-    #setup(timestep=DELAY,min_delay=DELAY,max_delay=DELAY,db_name='if_cond.sqlite')
-
-    #locations = ["kitchen", "classroom1", "classroom2", "lecture_room"]
-    #objects = ["ball", "dog", "cube", "hyperplane", "spike"]
-    #people = ["John", "Sergio", "Peter", "Guido", "Ritwik", "Eric", "Philip", "Kan", "Shashi", "Pam"]
-    #locVerbs = ["is in", "are in"]
-    #works
-    #parse('nest', "John is in the kitchen.")
-    #parse('nest', "Peter is in the lecture_room.")
-    #parse('nest', "Ritwik is in classroom1.")
-    # parse('spiNNaker', "John is in the kitchen.")
-    # parse('nest', "John is in the kitchen.")
-    #sentence ="John went to the hallway."
-    #sentence ="Daniel went to the bathroom."
-
-    #fails
-    #parse('nest', "Pam are in the classroom1.")
-    #parse('nest', "Pam are in classroom1.") #though close and might work
-    #parse('nest', "Pam is in the cube.")
 
 
 
