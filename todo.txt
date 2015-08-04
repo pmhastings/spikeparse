@@ -1,0 +1,6 @@
+Sergio
+
+ - Complete the migration to LIF cond exp neurons for Sergio's memory model
+ - Check that the maintxt works with the new memory model
+ - Check the memory model with nest
+ - Understand how to implement sentence injection in nest 
