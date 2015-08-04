@@ -1,6 +1,46 @@
 Sergio
-
  - Complete the migration to LIF cond exp neurons for Sergio's memory model
  - Check that the maintxt works with the new memory model
  - Check the memory model with nest
  - Understand how to implement sentence injection in nest 
+
+Chris
+ - All kinds of currently unspecified things.
+
+
+What should work
+System 1, text to parse to Sergio's Memory System to Evaluate in SpiNNaker
+System 2, text to parse to Sergio's Memory System to Evaluate in Nest
+System 3, text to parse to Ritwik's Memory System to Evaluate in Nest
+System 4, text to parse to Ritwik's Memory System to Evaluate in SpiNNaker
+System 5, speech to parse to Sergio's Memory System to speech in SpiNNaker
+System 6, speech to parse to Sergio's Memory System to speech in Nest
+System 7, speech to parse to Ritwik's Memory System to speech in SpiNNaker
+System 8, speech to parse to Ritwik's Memory System to speech in Nest
+
+
+What works--------
+1. Chris has 
+      text input (from train.txt) running to parser, then Sergio's memory
+      system, with answer output to the screen (the c output) in spinnaker.
+      To run this, I use
+python mainTxt.py #in one shell and
+python evalInjectorReceiver.py 1 #in another 1 refers to the test number
+       			         #leaving it blank gives the first (0) test.
+      I'm running nest.2.6 (which inteferes with spinnaker)
+      I'm using pyNN.0.8beta2
+      I'm using spiNNaker.2015.004 and a 48 chip board
+
+2. Chris has
+      test input (from train.txt) running to the parser.  Output is
+      voltage of the output neurons by cycles.  You should see 
+      pairs of semantic items coming up in the same or adjacent cycles
+      at the end of the sentence.
+      To run
+      swith the spikeServe variable to False in parse.py.  The run
+python parse.py nest
+      This will dump output to the screen.  You can redirect to e.g
+      > tempO then edit the data.
+      I'm running nest.2.6 (which inteferes with spinnaker)
+      I'm using pyNN.0.8beta2
+      I'm using spiNNaker.2015.004 and a 48 chip board
